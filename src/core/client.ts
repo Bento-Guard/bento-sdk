@@ -8,6 +8,7 @@ export class BentoGuardClient {
   private encryption: EncryptionService;
   private api: ApiClient;
   private config?: BentoGuardConfig;
+  private systemPublicKey: string | null = null;
 
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
@@ -61,8 +62,11 @@ export class BentoGuardClient {
     const timeout = options?.timeout || this.config.timeout || 30000;
 
     try {
-      // 1. Fetch System Key (with session caching logic potentially)
-      const systemPublicKey = await this.api.getSystemPublicKey();
+      // 1. Fetch System Key (with session caching)
+      if (!this.systemPublicKey) {
+        this.systemPublicKey = await this.api.getSystemPublicKey();
+      }
+      const systemPublicKey = this.systemPublicKey;
 
       // 2. Encrypt instruction via BSIT Protocol
       const encryptedPayload = await this.encryption.encrypt(
