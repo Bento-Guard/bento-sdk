@@ -1,4 +1,4 @@
-import { diffieHellman, createPrivateKey, createPublicKey } from 'node:crypto';
+import { diffieHellman, createPrivateKey, createPublicKey, hkdfSync } from 'node:crypto';
 import { BentoError, BentoErrorCode } from '../errors/bento-error';
 
 export class EncryptionService {
@@ -26,6 +26,28 @@ export class EncryptionService {
       throw new BentoError(
         BentoErrorCode.KEY_DERIVATION_FAILED,
         `ECDH key exchange failed: ${error.message}`
+      );
+    }
+  }
+
+  /**
+   * Derives a high-entropy AES key from a shared secret using HKDF
+   */
+  public async deriveKey(sharedSecret: Buffer): Promise<Buffer> {
+    try {
+      return Buffer.from(
+        hkdfSync(
+          'sha256',
+          sharedSecret,
+          Buffer.alloc(0), // Salt
+          Buffer.from('Bento-Secure-Context'), // Info
+          32 // Key length
+        )
+      );
+    } catch (error: any) {
+      throw new BentoError(
+        BentoErrorCode.KEY_DERIVATION_FAILED,
+        `HKDF key derivation failed: ${error.message}`
       );
     }
   }
