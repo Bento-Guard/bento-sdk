@@ -1,4 +1,4 @@
-import { BentoProtectOptions, BentoGuardConfig } from '../types';
+import { BentoProtectOptions, BentoGuardConfig, AnalysisResult } from '../types';
 import { EncryptionService } from '../crypto/encryption';
 import { ApiClient } from '../api/client';
 import { BentoError, BentoErrorCode } from '../errors/bento-error';
@@ -53,22 +53,25 @@ export class BentoGuardClient {
     instruction: string,
     rawTransaction: string,
     options?: BentoProtectOptions
-  ) {
+  ): Promise<AnalysisResult> {
     if (!this.config?.agentX25519PrivateKey) {
       throw new BentoError(BentoErrorCode.INVALID_CONFIG, 'Agent private key not configured');
     }
 
+    const timeout = options?.timeout || this.config.timeout || 30000;
+
     try {
-      // 1. Fetch System Key
+      // 1. Fetch System Key (with session caching logic potentially)
       const systemPublicKey = await this.api.getSystemPublicKey();
 
-      // 2. Encrypt instruction
+      // 2. Encrypt instruction via BSIT Protocol
       const encryptedPayload = await this.encryption.encrypt(
         instruction,
         systemPublicKey,
         this.config.agentX25519PrivateKey
       );
 
+      // 3. Submit to Bento Guard Backend
       const result = await this.api.postTransaction({
         agent_id: this.config.agentX25519PublicKey,
         encrypted_payload: JSON.stringify(encryptedPayload),
@@ -76,15 +79,19 @@ export class BentoGuardClient {
         network: this.config.network || 'solana',
       });
 
-      // Mechanical check for "BLOCK"
+      // 4. Handle "BLOCK" recommendation (Mechanism 2: Firewall)
       if (result.recommendation === 'BLOCK') {
-        throw new BentoError(BentoErrorCode.HIGH_RISK_DETECTED, `Action blocked: ${result.reasoning}`, result);
+        throw new BentoError(
+          BentoErrorCode.HIGH_RISK_DETECTED,
+          `Action blocked by Bento Guard: ${result.reasoning}`,
+          result
+        );
       }
 
       return result;
     } catch (error: any) {
       if (error instanceof BentoError) throw error;
-      throw new BentoError(BentoErrorCode.NETWORK_ERROR, error.message || 'Unknown network error');
+      throw BentoError.fromError(error);
     }
   }
 }
