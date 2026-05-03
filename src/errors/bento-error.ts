@@ -5,6 +5,8 @@ export enum BentoErrorCode {
   UNAUTHORIZED = 'UNAUTHORIZED',
   HIGH_RISK_DETECTED = 'HIGH_RISK_DETECTED',
   INVALID_CONFIG = 'INVALID_CONFIG',
+  KEY_DERIVATION_FAILED = 'KEY_DERIVATION_FAILED',
+  NOT_INITIALIZED = 'NOT_INITIALIZED',
 }
 
 export class BentoError extends Error {
@@ -15,5 +17,11 @@ export class BentoError extends Error {
   ) {
     super(message);
     this.name = 'BentoError';
+    Object.setPrototypeOf(this, BentoError.prototype);
+  }
+
+  public static fromError(error: any, defaultCode = BentoErrorCode.NETWORK_ERROR): BentoError {
+    if (error instanceof BentoError) return error;
+    return new BentoError(defaultCode, error.message || 'An unknown error occurred', error);
   }
 }
