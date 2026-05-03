@@ -102,10 +102,28 @@ export class EncryptionService {
   }
 
   /**
-   * Implements X25519 ECDH + AES-256-GCM
+   * Orchestrates the entire BSIT encryption flow
    */
-  public async encrypt(plaintext: string, bentoPublicKey: string, agentPrivateKey: string) {
-    // To be implemented in next tasks
-    throw new Error('Not implemented yet');
+  public async encrypt(
+    plaintext: string,
+    bentoPublicKey: string,
+    agentPrivateKey: string
+  ): Promise<EncryptedPayload> {
+    const sharedSecret = await this.deriveSharedSecret(agentPrivateKey, bentoPublicKey);
+    const aesKey = await this.deriveKey(sharedSecret);
+    return this.aesEncrypt(plaintext, aesKey);
+  }
+
+  /**
+   * Orchestrates the entire BSIT decryption flow
+   */
+  public async decrypt(
+    payload: EncryptedPayload,
+    bentoPublicKey: string,
+    agentPrivateKey: string
+  ): Promise<string> {
+    const sharedSecret = await this.deriveSharedSecret(agentPrivateKey, bentoPublicKey);
+    const aesKey = await this.deriveKey(sharedSecret);
+    return this.aesDecrypt(payload, aesKey);
   }
 }
