@@ -8,6 +8,7 @@ import { BentoProtectOptions } from './types';
  * @param rawTransaction - The raw transaction data to be simulated (Base64)
  * @param options - Optional configuration overrides
  * @returns The result of the protection analysis
+ * @throws {BentoError} If risk is high or network error occurs
  */
 export async function protect(
   instruction: string,
@@ -18,7 +19,11 @@ export async function protect(
   return client.protect(instruction, rawTransaction, options);
 }
 
+// Export the main client and its alias
+export { BentoGuardClient };
+export { BentoGuardClient as BentoClient };
+
 // Export other useful modules
-export * from './core/client';
 export * from './errors/bento-error';
 export * from './types';
+export * from './utils/logger';
