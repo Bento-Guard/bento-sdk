@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { BentoError, BentoErrorCode } from '../errors/bento-error';
 
 export class ApiClient {
   private axiosInstance: AxiosInstance;
@@ -10,10 +11,16 @@ export class ApiClient {
     });
   }
 
-  public async getSystemPublicKey() {
-    const response = await this.axiosInstance.get('/api/v1/system/public-key');
-    // All backend responses follow { success: true, data: ..., timestamp: ... }
-    return response.data.data.publicKey;
+  public async getSystemPublicKey(): Promise<string> {
+    try {
+      const response = await this.axiosInstance.get('/api/v1/system/public-key');
+      if (!response.data?.success || !response.data?.data?.publicKey) {
+        throw new BentoError(BentoErrorCode.NETWORK_ERROR, 'Failed to retrieve system public key from backend');
+      }
+      return response.data.data.publicKey;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
   }
 
   public async postTransaction(payload: any) {
