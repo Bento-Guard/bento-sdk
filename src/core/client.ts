@@ -1,24 +1,27 @@
 import { BentoProtectOptions, BentoGuardConfig, AnalysisResult } from '../types';
 import { EncryptionService } from '../crypto/encryption';
+import { SignerService } from '../crypto/signer';
 import { ApiClient } from '../api/client';
 import { BentoError, BentoErrorCode } from '../errors/bento-error';
+import { DEFAULT_TIMEOUT } from '../constants';
 
 export class BentoGuardClient {
   private static instance: BentoGuardClient;
   private encryption: EncryptionService;
+  private signer: SignerService;
   private api: ApiClient;
-  private config?: BentoGuardConfig;
+  private config: BentoGuardConfig;
   private systemPublicKey: string | null = null;
 
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
     this.encryption = new EncryptionService();
+    this.signer = new SignerService();
     this.api = new ApiClient(this.config.backendUrl);
   }
 
   /**
    * Initializes the SDK with configuration.
-   * If not called, it will attempt to load from environment variables.
    */
   public static initialize(config: BentoGuardConfig): BentoGuardClient {
     BentoGuardClient.instance = new BentoGuardClient(config);
@@ -34,60 +37,69 @@ export class BentoGuardClient {
 
   private loadConfigFromEnv(): BentoGuardConfig {
     const config: BentoGuardConfig = {
-      backendUrl: process.env.BENTO_BACKEND_URL || 'http://localhost:3000',
+      backendUrl: process.env.BENTO_BACKEND_URL, // Optional
       agentX25519PrivateKey: process.env.AGENT_X25519_PRIVATE_KEY || '',
       agentX25519PublicKey: process.env.AGENT_X25519_PUBLIC_KEY || '',
-      agentPrivateWalletKey: process.env.AGENT_PRIVATE_WALLET_KEY,
+      agentWalletPrivateKey: process.env.AGENT_WALLET_PRIVATE_KEY || '',
+      network: (process.env.BENTO_NETWORK as any) || 'solana',
     };
 
-    if (!config.agentX25519PrivateKey || !config.agentX25519PublicKey) {
-      console.warn('BentoGuard: Missing required credentials in environment variables.');
+    if (!config.agentX25519PrivateKey || !config.agentWalletPrivateKey) {
+      console.warn('BentoGuard: Missing required credentials (X25519 or Wallet Private Key) in environment.');
     }
 
     return config;
   }
 
   /**
-   * Orchestrates the protection flow
+   * Orchestrates the protection flow: Encrypt -> Sign -> Verify
    */
   public async protect(
     instruction: string,
     rawTransaction: string,
     options?: BentoProtectOptions
   ): Promise<AnalysisResult> {
-    if (!this.config?.agentX25519PrivateKey) {
-      throw new BentoError(BentoErrorCode.INVALID_CONFIG, 'Agent private key not configured');
+    if (!this.config.agentX25519PrivateKey || !this.config.agentWalletPrivateKey) {
+      throw new BentoError(BentoErrorCode.INVALID_CONFIG, 'Required keys not configured');
     }
 
-    const timeout = options?.timeout || this.config.timeout || 30000;
-
     try {
-      // 1. Fetch System Key (with session caching)
+      // 1. Fetch System Key for BSIT Encryption
       if (!this.systemPublicKey) {
         this.systemPublicKey = await this.api.getSystemPublicKey();
       }
       const systemPublicKey = this.systemPublicKey;
 
-      // 2. Encrypt instruction via BSIT Protocol
+      // 2. Encrypt instruction via BSIT Protocol (Communication Layer)
       const encryptedPayload = await this.encryption.encrypt(
         instruction,
         systemPublicKey,
         this.config.agentX25519PrivateKey
       );
+      const encryptedPayloadStr = JSON.stringify(encryptedPayload);
 
-      // 3. Submit to Bento Guard Backend
+      // 3. Sign the encrypted payload (Identity Layer)
+      // This proves that the agent owning the wallet sent this specific instruction
+      const { signature, publicKey: walletAddress } = this.signer.signMessage(
+        encryptedPayloadStr,
+        this.config.agentWalletPrivateKey
+      );
+
+      // 4. Submit to Bento Guard Backend
       const result = await this.api.postTransaction({
         agent_id: this.config.agentX25519PublicKey,
-        encrypted_payload: JSON.stringify(encryptedPayload),
+        wallet_address: walletAddress,
+        encrypted_payload: encryptedPayloadStr,
+        signature: signature,
         base64_tx: rawTransaction,
         network: this.config.network || 'solana',
       });
 
-      // 4. Handle "BLOCK" recommendation (Mechanism 2: Firewall)
+      // 5. Firewall: Automatically block high-risk actions
       if (result.recommendation === 'BLOCK') {
         throw new BentoError(
           BentoErrorCode.HIGH_RISK_DETECTED,
-          `Action blocked by Bento Guard: ${result.reasoning}`,
+          `Action blocked: ${result.reasoning}`,
           result
         );
       }

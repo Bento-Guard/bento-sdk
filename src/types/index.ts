@@ -1,8 +1,8 @@
 export interface BentoGuardConfig {
-  backendUrl: string;
-  agentX25519PrivateKey: string;
-  agentX25519PublicKey: string;
-  agentPrivateWalletKey?: string;
+  agentX25519PrivateKey: string; // Used for BSIT encryption
+  agentX25519PublicKey: string;  // Used for BSIT key exchange
+  agentWalletPrivateKey: string; // Used for signing requests (Identity)
+  backendUrl?: string;           // Optional: defaults to Bento API
   network?: 'solana' | 'ethereum' | 'base';
   timeout?: number;
 }
@@ -23,6 +23,7 @@ export interface AnalysisResult {
   recommendation: 'ALLOW' | 'BLOCK' | 'ESCALATE';
   riskScore: number;
   reasoning: string;
+  signature?: string; // Optional: signature from backend if needed
   details?: {
     simulationStatus?: string;
     aiAnalysis?: string;

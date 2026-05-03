@@ -5,9 +5,9 @@ import { AnalysisResult } from '../types';
 export class ApiClient {
   private axiosInstance: AxiosInstance;
 
-  constructor(baseURL: string) {
+  constructor(baseURL?: string) {
     this.axiosInstance = axios.create({
-      baseURL,
+      baseURL: baseURL || 'https://api.bento-guard.com',
       timeout: 30000,
     });
   }
@@ -16,7 +16,7 @@ export class ApiClient {
     try {
       const response = await this.axiosInstance.get('/api/v1/system/public-key');
       if (!response.data?.success || !response.data?.data?.publicKey) {
-        throw new BentoError(BentoErrorCode.NETWORK_ERROR, 'Failed to retrieve system public key from backend');
+        throw new BentoError(BentoErrorCode.NETWORK_ERROR, 'Failed to retrieve system public key');
       }
       return response.data.data.publicKey;
     } catch (error: any) {
@@ -24,7 +24,14 @@ export class ApiClient {
     }
   }
 
-  public async postTransaction(payload: any): Promise<AnalysisResult> {
+  public async postTransaction(payload: {
+    agent_id: string; // Communication Public Key (X25519)
+    wallet_address: string; // Identity Public Key (Wallet)
+    encrypted_payload: string;
+    signature: string; // Proof of Identity
+    base64_tx: string;
+    network: string;
+  }): Promise<AnalysisResult> {
     try {
       const response = await this.axiosInstance.post('/api/v1/transactions', payload);
       if (!response.data?.success || !response.data?.data) {

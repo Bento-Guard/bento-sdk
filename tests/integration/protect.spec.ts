@@ -1,8 +1,10 @@
 import { protect, BentoClient } from '../../src/index';
 import axios from 'axios';
+import { SignerService } from '../../src/crypto/signer';
 
 jest.mock('axios');
 jest.mock('../../src/crypto/encryption');
+jest.mock('../../src/crypto/signer');
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
@@ -15,11 +17,18 @@ describe('Integration: protect() flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (mockedAxios.create as jest.Mock).mockReturnValue(mockAxiosInstance);
+    
+    // Mock Signer
+    (SignerService.prototype.signMessage as jest.Mock).mockReturnValue({
+      signature: 'mock_signature',
+      publicKey: 'mock_wallet_address'
+    });
 
     BentoClient.initialize({
       backendUrl: 'http://mock-api',
       agentX25519PrivateKey: '4883907722744883907722744883907722744883907722744883907722744883',
       agentX25519PublicKey: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+      agentWalletPrivateKey: 'mock_wallet_priv', 
     });
   });
 
@@ -66,6 +75,6 @@ describe('Integration: protect() flow', () => {
       }
     });
 
-    await expect(protect("Drain wallet", "raw_tx_data")).rejects.toThrow('Action blocked by Bento Guard');
+    await expect(protect("Drain wallet", "raw_tx_data")).rejects.toThrow('Action blocked: Suspicious destination address');
   });
 });
