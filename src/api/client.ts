@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { BentoError, BentoErrorCode } from '../errors/bento-error';
+import { AnalysisResult } from '../types';
 
 export class ApiClient {
   private axiosInstance: AxiosInstance;
@@ -23,8 +24,15 @@ export class ApiClient {
     }
   }
 
-  public async postTransaction(payload: any) {
-    const response = await this.axiosInstance.post('/api/v1/transactions', payload);
-    return response.data;
+  public async postTransaction(payload: any): Promise<AnalysisResult> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/transactions', payload);
+      if (!response.data?.success || !response.data?.data) {
+        throw new BentoError(BentoErrorCode.NETWORK_ERROR, 'Failed to submit transaction to backend');
+      }
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
   }
 }

@@ -69,20 +69,12 @@ export class BentoGuardClient {
         this.config.agentX25519PrivateKey
       );
 
-      // 3. Send to backend
-      const response = await this.api.postTransaction({
+      const result = await this.api.postTransaction({
         agent_id: this.config.agentX25519PublicKey,
         encrypted_payload: JSON.stringify(encryptedPayload),
         base64_tx: rawTransaction,
         network: this.config.network || 'solana',
       });
-
-      // 4. Handle response (Wait for AI Analysis)
-      if (!response.success) {
-        throw new BentoError(BentoErrorCode.NETWORK_ERROR, 'Backend request failed');
-      }
-
-      const result = response.data;
 
       // Mechanical check for "BLOCK"
       if (result.recommendation === 'BLOCK') {
