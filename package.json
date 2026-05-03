@@ -1,0 +1,43 @@
+{
+  "name": "@bento/guard-sdk",
+  "version": "0.1.0",
+  "description": "Bento Guard SDK - AI-powered security infrastructure for autonomous agents",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint 'src/**/*.ts'",
+    "format": "prettier --write 'src/**/*.ts'"
+  },
+  "keywords": [
+    "bento",
+    "guard",
+    "ai",
+    "agent",
+    "security",
+    "crypto",
+    "x25519",
+    "solana"
+  ],
+  "author": "Bento Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.0",
+    "tweetnacl": "^1.0.3",
+    "bs58": "^6.0.0",
+    "@solana/web3.js": "^1.91.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5"
+  }
+}
