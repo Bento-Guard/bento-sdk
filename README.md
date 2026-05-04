@@ -19,6 +19,8 @@ AGENT_X25519_PUBLIC_KEY=your_x25519_public_key_hex
 AGENT_WALLET_PRIVATE_KEY=your_wallet_private_key_bs58
 ```
 
+*Optional: `BENTO_BACKEND_URL` (defaults to `https://api.bento-guard.com`)*
+
 ## 🔄 The Guarded Workflow
 
 Bento Guard should be integrated **after** your agent generates a transaction but **before** it signs and broadcasts it to the blockchain.
