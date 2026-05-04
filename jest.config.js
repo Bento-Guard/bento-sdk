@@ -5,7 +5,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testMatch: ['**/*.spec.ts'],
+  testMatch: ['**/?(*.)+(spec|test).ts'],
   verbose: true,
   forceExit: true,
   clearMocks: true,
