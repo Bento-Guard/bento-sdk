@@ -1,22 +1,22 @@
 import { BentoProtectOptions, BentoGuardConfig, AnalysisResult } from '../types';
-import { EncryptionService } from '../crypto/encryption';
-import { SignerService } from '../crypto/signer';
+import { EncryptionService as BsitProtocol } from '../crypto/bsit';
+import { IdentityService } from '../crypto/identity';
 import { ApiClient } from '../api/client';
 import { BentoError, BentoErrorCode } from '../errors/bento-error';
 import { DEFAULT_TIMEOUT } from '../constants';
 
 export class BentoGuardClient {
   private static instance: BentoGuardClient;
-  private encryption: EncryptionService;
-  private signer: SignerService;
+  private bsit: BsitProtocol;
+  private identity: IdentityService;
   private api: ApiClient;
   private config: BentoGuardConfig;
   private systemPublicKey: string | null = null;
 
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
-    this.encryption = new EncryptionService();
-    this.signer = new SignerService();
+    this.bsit = new BsitProtocol();
+    this.identity = new IdentityService();
     this.api = new ApiClient();
   }
 
@@ -74,17 +74,17 @@ export class BentoGuardClient {
       const systemPublicKey = this.systemPublicKey;
 
       // 2. Encrypt instruction via BSIT Protocol (Communication Layer)
-      const encryptedPayload = await this.encryption.encrypt(
+      const encryptedPayload = await this.bsit.encrypt(
         instruction,
         systemPublicKey,
         this.config.agentX25519PrivateKey
       );
       const encryptedPayloadStr = JSON.stringify(encryptedPayload);
 
-      // 3. Sign the encrypted payload (Identity Layer)
-      // This proves that the agent owning the wallet sent this specific instruction
-      const { signature, publicKey: walletAddress } = this.signer.signMessage(
+      // 3. Sign the combined payload (Identity Layer)
+      const { signature, publicKey: walletAddress } = this.identity.signPayload(
         encryptedPayloadStr,
+        rawTransaction,
         this.config.agentWalletPrivateKey
       );
 
