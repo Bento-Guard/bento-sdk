@@ -43,3 +43,4 @@ pnpm-debug.log*
 *.tsbuildinfo
 *.cache
 .temp
+docs/
