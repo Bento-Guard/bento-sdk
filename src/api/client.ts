@@ -5,9 +5,11 @@ import { AnalysisResult } from '../types';
 export class ApiClient {
   private axiosInstance: AxiosInstance;
 
-  constructor(baseURL?: string) {
+  private readonly INTERNAL_BASE_URL = process.env.BENTO_BACKEND_URL || 'http://localhost:4001';
+
+  constructor() {
     this.axiosInstance = axios.create({
-      baseURL: baseURL || 'https://api.bento-guard.com',
+      baseURL: this.INTERNAL_BASE_URL,
       timeout: 30000,
     });
   }
@@ -25,12 +27,12 @@ export class ApiClient {
   }
 
   public async postTransaction(payload: {
-    agent_id: string; // Communication Public Key (X25519)
-    wallet_address: string; // Identity Public Key (Wallet)
+    agent_pubkey: string;
+    wallet_address: string;
     encrypted_payload: string;
-    signature: string; // Proof of Identity
+    signature: string;
     base64_tx: string;
-    network: string;
+    network?: string;
   }): Promise<AnalysisResult> {
     try {
       const response = await this.axiosInstance.post('/api/v1/transactions', payload);

@@ -17,7 +17,7 @@ export class BentoGuardClient {
     this.config = config || this.loadConfigFromEnv();
     this.encryption = new EncryptionService();
     this.signer = new SignerService();
-    this.api = new ApiClient(this.config.backendUrl);
+    this.api = new ApiClient();
   }
 
   /**
@@ -30,14 +30,17 @@ export class BentoGuardClient {
 
   public static getInstance(): BentoGuardClient {
     if (!BentoGuardClient.instance) {
-      BentoGuardClient.instance = new BentoGuardClient();
+      throw new BentoError(BentoErrorCode.INVALID_CONFIG, 'BentoGuardClient has not been initialized. Call initialize() first.');
     }
     return BentoGuardClient.instance;
   }
 
+  public static isInitialized(): boolean {
+    return !!BentoGuardClient.instance;
+  }
+
   private loadConfigFromEnv(): BentoGuardConfig {
     const config: BentoGuardConfig = {
-      backendUrl: process.env.BENTO_BACKEND_URL, // Optional
       agentX25519PrivateKey: process.env.AGENT_X25519_PRIVATE_KEY || '',
       agentX25519PublicKey: process.env.AGENT_X25519_PUBLIC_KEY || '',
       agentWalletPrivateKey: process.env.AGENT_WALLET_PRIVATE_KEY || '',
@@ -87,7 +90,7 @@ export class BentoGuardClient {
 
       // 4. Submit to Bento Guard Backend
       const result = await this.api.postTransaction({
-        agent_id: this.config.agentX25519PublicKey,
+        agent_pubkey: this.config.agentX25519PublicKey,
         wallet_address: walletAddress,
         encrypted_payload: encryptedPayloadStr,
         signature: signature,
