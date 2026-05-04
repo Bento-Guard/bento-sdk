@@ -1,6 +1,6 @@
 {
-  "name": "@bento/guard-sdk",
-  "version": "0.1.0",
+  "name": "@bento/sdk",
+  "version": "1.0.0",
   "description": "Bento Guard SDK - AI-powered security infrastructure for autonomous agents",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,7 +11,8 @@
     "test:watch": "jest --watch",
     "validate": "ts-node scratch/validate_sdk.ts",
     "lint": "eslint 'src/**/*.ts'",
-    "format": "prettier --write 'src/**/*.ts'"
+    "format": "prettier --write 'src/**/*.ts'",
+    "prepare": "npm run build"
   },
   "keywords": [
     "bento",
