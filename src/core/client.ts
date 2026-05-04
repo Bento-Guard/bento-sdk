@@ -23,8 +23,10 @@ export class BentoGuardClient {
   /**
    * Initializes the SDK with configuration.
    */
-  public static initialize(config: BentoGuardConfig): BentoGuardClient {
-    BentoGuardClient.instance = new BentoGuardClient(config);
+  public static initialize(config?: BentoGuardConfig): BentoGuardClient {
+    if (!BentoGuardClient.instance) {
+      BentoGuardClient.instance = new BentoGuardClient(config);
+    }
     return BentoGuardClient.instance;
   }
 
