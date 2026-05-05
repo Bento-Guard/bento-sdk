@@ -12,17 +12,35 @@ import { BentoError, BentoErrorCode } from '../errors/bento-error';
 
 export class EncryptionService {
   /**
+   * Helper to wrap raw 32-byte X25519 keys into DER format
+   */
+  private wrapKey(hex: string, type: 'public' | 'private'): Buffer {
+    const raw = Buffer.from(hex, 'hex');
+    if (raw.length !== 32) return raw; // Already wrapped or invalid
+
+    if (type === 'public') {
+      // X25519 SPKI Header (12 bytes)
+      const header = Buffer.from('302a300506032b656e032100', 'hex');
+      return Buffer.concat([header, raw]);
+    } else {
+      // X25519 PKCS8 Header (16 bytes)
+      const header = Buffer.from('302e020100300506032b656e04220420', 'hex');
+      return Buffer.concat([header, raw]);
+    }
+  }
+
+  /**
    * Derives a shared secret using X25519 ECDH
    */
   public async deriveSharedSecret(privateKeyHex: string, publicKeyHex: string): Promise<Buffer> {
     try {
       const privateKey = createPrivateKey({
-        key: Buffer.from(privateKeyHex, 'hex'),
+        key: this.wrapKey(privateKeyHex, 'private'),
         format: 'der',
         type: 'pkcs8',
       });
       const publicKey = createPublicKey({
-        key: Buffer.from(publicKeyHex, 'hex'),
+        key: this.wrapKey(publicKeyHex, 'public'),
         format: 'der',
         type: 'spki',
       });

@@ -18,15 +18,14 @@ export interface EncryptedPayload {
 }
 
 export interface AnalysisResult {
-  success: boolean;
-  recommendation: 'ALLOW' | 'BLOCK' | 'ESCALATE';
+  recommendation: 'ALLOW' | 'BLOCKED' | 'ESCALATED';
   riskScore: number;
   reasoning: string;
-  signature?: string; // Optional: signature from backend if needed
+  actionId?: string;
+  timestamp?: string;
   details?: {
     simulationStatus?: string;
     aiAnalysis?: string;
     policyViolations?: string[];
   };
-  timestamp: string;
 }

@@ -101,7 +101,7 @@ export class BentoGuardClient {
       });
 
       // 5. Firewall: Automatically block high-risk actions
-      if (result.recommendation === 'BLOCK') {
+      if (result.recommendation === 'BLOCKED') {
         throw new BentoError(
           BentoErrorCode.HIGH_RISK_DETECTED,
           `Action blocked: ${result.reasoning}`,
@@ -109,10 +109,29 @@ export class BentoGuardClient {
         );
       }
 
+      if (result.recommendation === 'ESCALATED') {
+        // Log escalation but allow script to continue if manual review is required asynchronously
+        console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
+      }
+
       return result;
     } catch (error: any) {
       if (error instanceof BentoError) throw error;
       throw BentoError.fromError(error);
     }
+  }
+
+  /**
+   * Manually approve or block an escalated action.
+   */
+  public async updateActionDecision(actionId: string, decision: 'ALLOW' | 'BLOCKED'): Promise<any> {
+    return this.api.updateActionDecision(actionId, decision);
+  }
+
+  /**
+   * Check the current status of an action (useful for polling).
+   */
+  public async getActionStatus(actionId: string): Promise<any> {
+    return this.api.getActionStatus(actionId);
   }
 }
