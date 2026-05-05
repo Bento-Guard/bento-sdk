@@ -5,7 +5,7 @@ The official SDK for integrating **Bento Guard** AI-powered security into your a
 ## 🚀 Installation
 
 ```bash
-npm install @bento/sdk
+npm install @bentoguard/sdk
 ```
 
 Ensure you have a `.env` file with the following credentials:
@@ -34,7 +34,7 @@ Bento Guard should be integrated **after** your agent generates a transaction bu
 Here is how you actually use it in a production agent:
 
 ```typescript
-import { protect, BentoClient } from '@bento/sdk';
+import { protect, BentoClient } from '@bentoguard/sdk';
 import { Connection, Transaction, SystemProgram, PublicKey, Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 

@@ -45,7 +45,7 @@ describe('BentoGuardClient protect() E2E', () => {
     // @ts-ignore
     client.api.postTransaction.mockResolvedValue({
       success: true,
-      recommendation: 'BLOCK',
+      recommendation: 'BLOCKED',
       riskScore: 80,
       reasoning: 'Simulated block reasoning',
       timestamp: new Date().toISOString()
