@@ -1,5 +1,5 @@
 {
-  "name": "@bento/sdk",
+  "name": "@bentoguard/sdk",
   "version": "1.0.0",
   "description": "Bento Guard SDK - AI-powered security infrastructure for autonomous agents",
   "main": "./dist/index.js",
