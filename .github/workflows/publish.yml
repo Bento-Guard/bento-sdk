@@ -1,0 +1,27 @@
+name: Publish to npm
+on:
+  push:
+    branches: [develop]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.11.1"
+
+      - name: Install dependencies
+        run: rm -f package-lock.json && npm install
+
+      - name: Build
+        run: npm run build
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPMJS }}
