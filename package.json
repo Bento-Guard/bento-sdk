@@ -9,7 +9,7 @@
     "scripts"
   ],
   "bin": {
-    "bento-setup": "scripts/setup.js"
+    "bentoguard": "scripts/setup.js"
   },
   "scripts": {
     "build": "tsc",
@@ -21,7 +21,7 @@
     "lint": "eslint 'src/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts'",
     "prepare": "npm run build",
-    "postinstall": "node scripts/banner.js && node scripts/setup.js"
+    "postinstall": "node scripts/banner.js"
   },
   "keywords": [
     "bento",
@@ -36,6 +36,7 @@
   "author": "Bento Team",
   "license": "MIT",
   "dependencies": {
+    "@bentoguard/sdk": "^1.0.6",
     "@solana/web3.js": "^1.91.0",
     "axios": "^1.7.0",
     "bs58": "^6.0.0",

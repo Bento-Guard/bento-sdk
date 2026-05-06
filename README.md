@@ -2,33 +2,34 @@
 
 The official SDK for integrating **Bento Guard** AI-powered security into your autonomous agents. Protect your agentic workflows with on-the-fly LLM auditing and simulation-based guardrails.
 
-## 🚀 Installation
+## 🚀 Quick Start
 
+Choose the method that fits your workflow best:
+
+### Option 1: All-in-One (Recommended)
+Initialize, configure, and install everything in one go:
+```bash
+npx bentoguard
+```
+
+### Option 2: Standard Installation
+Install the package first, then configure manually:
 ```bash
 npm install @bentoguard/sdk
 ```
+*Note: After installation, you can still run `npx bentoguard` at any time to re-configure.*
 
-### Interactive Setup
-Upon installation, Bento's **Setup Wizard** will launch automatically to help you:
-- **Choose Setup Mode**: Select between [Auto] key generation or [Manual] input.
-- **Configure Identity**: Setup your Agent Wallet and X25519 Encryption keys.
-- **Generate Examples**: Optionally create a ready-to-use `bento-demo.ts` file.
+---
 
-To re-run the setup at any time:
-```bash
-npx bento-setup
-```
+## 🛠️ Configuration
 
-If you prefer manual configuration, ensure you have a `.env` file with the following credentials:
+The setup wizard helps you configure the following environment variables in a `.env` file:
 
-```env
-# Communication Keys (X25519) - Used for E2E Encryption (BSIT)
-AGENT_X25519_PRIVATE_KEY=your_x25519_private_key_hex
-AGENT_X25519_PUBLIC_KEY=your_x25519_public_key_hex
-
-# Identity Key (Wallet) - Used for Request Signing
-AGENT_WALLET_PRIVATE_KEY=your_wallet_private_key_bs58
-```
+| Variable | Description |
+|----------|-------------|
+| `AGENT_X25519_PRIVATE_KEY` | Your Agent's X25519 Private Key for encryption |
+| `AGENT_X25519_PUBLIC_KEY` | Your Agent's X25519 Public Key |
+| `AGENT_WALLET_PRIVATE_KEY` | Your Agent's Solana Wallet Private Key (Base58) |
 
 
 ## 🔄 The Guarded Workflow
