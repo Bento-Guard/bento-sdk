@@ -8,7 +8,18 @@ The official SDK for integrating **Bento Guard** AI-powered security into your a
 npm install @bentoguard/sdk
 ```
 
-Ensure you have a `.env` file with the following credentials:
+### Interactive Setup
+Upon installation, Bento's **Setup Wizard** will launch automatically to help you:
+- **Choose Setup Mode**: Select between [Auto] key generation or [Manual] input.
+- **Configure Identity**: Setup your Agent Wallet and X25519 Encryption keys.
+- **Generate Examples**: Optionally create a ready-to-use `bento-demo.ts` file.
+
+To re-run the setup at any time:
+```bash
+npx bento-setup
+```
+
+If you prefer manual configuration, ensure you have a `.env` file with the following credentials:
 
 ```env
 # Communication Keys (X25519) - Used for E2E Encryption (BSIT)

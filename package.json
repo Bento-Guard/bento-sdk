@@ -7,6 +7,9 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "bento-setup": "scripts/setup.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -16,7 +19,8 @@
     "validate": "ts-node scratch/validate_sdk.ts",
     "lint": "eslint 'src/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts'",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "postinstall": "node scripts/setup.js"
   },
   "keywords": [
     "bento",
@@ -34,7 +38,9 @@
     "@solana/web3.js": "^1.91.0",
     "axios": "^1.7.0",
     "bs58": "^6.0.0",
+    "chalk": "^4.1.2",
     "dotenv": "^16.4.5",
+    "prompts": "^2.4.2",
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
