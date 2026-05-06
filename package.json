@@ -1,6 +1,6 @@
 {
   "name": "@bentoguard/sdk",
-  "version": "1.0.5",
+  "version": "1.0.4",
   "description": "Bento Guard SDK - AI-powered security infrastructure for autonomous agents",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,7 +21,7 @@
     "lint": "eslint 'src/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts'",
     "prepare": "npm run build",
-    "postinstall": "node scripts/setup.js"
+    "postinstall": "node scripts/banner.js && node scripts/setup.js"
   },
   "keywords": [
     "bento",
