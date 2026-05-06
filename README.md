@@ -9,7 +9,7 @@ Choose the method that fits your workflow best:
 ### Option 1: All-in-One (Recommended)
 Initialize, configure, and install everything in one go:
 ```bash
-npx bentoguard
+npx @bentoguard/sdk
 ```
 
 ### Option 2: Standard Installation
@@ -17,7 +17,7 @@ Install the package first, then configure manually:
 ```bash
 npm install @bentoguard/sdk
 ```
-*Note: After installation, you can still run `npx bentoguard` at any time to re-configure.*
+*Note: After installation, you can still run `npx @bentoguard/sdk` at any time to re-configure.*
 
 ---
 
