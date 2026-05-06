@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * Bento Guard SDK - Interactive Setup Wizard
- * Professional CLI tool for initializing and configuring Bento Guard security.
  */
 
 const fs = require('fs');
@@ -50,7 +49,7 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
 
   async function setup() {
     printBanner();
-    
+
     if (!process.stdout.isTTY) {
       console.log(chalk.yellow('⚠️  Interactive session required.'));
       console.log(chalk.white('Please run: ') + chalk.cyan('npx bentoguard\n'));
@@ -78,7 +77,7 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
         message: 'Bento Guard SDK is missing. Install it now?',
         initial: true
       });
-      
+
       if (install) {
         process.stdout.write(chalk.yellow('\n📦 Downloading security modules...'));
         try {
