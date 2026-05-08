@@ -23,7 +23,9 @@ export class ApiClient {
       }
       return response.data.data.publicKey;
     } catch (error: any) {
-      console.error(`[SDK] GET ERROR: ${error.message} (Status: ${error.response?.status})`);
+      const status = error.response?.status;
+      const serverMessage = error.response?.data?.message || error.response?.data?.error?.message || error.message;
+      console.error(`[SDK] GET ERROR: ${serverMessage} (Status: ${status || 'N/A'})`);
       throw BentoError.fromError(error);
     }
   }
@@ -43,10 +45,12 @@ export class ApiClient {
       }
       return response.data.data;
     } catch (error: any) {
-      console.error(`[SDK] POST ERROR: ${error.message} (Status: ${error.response?.status})`);
-      if (error.response?.data) {
-        console.error('[SDK] Server response:', JSON.stringify(error.response.data, null, 2));
-      }
+      const status = error.response?.status;
+      const serverData = error.response?.data;
+      const serverMessage = serverData?.message || serverData?.error?.message || error.message;
+      
+      console.error(`[SDK] POST ERROR: ${serverMessage} (Status: ${status || 'N/A'})`);
+      
       throw BentoError.fromError(error);
     }
   }
