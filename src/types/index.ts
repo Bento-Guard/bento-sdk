@@ -1,6 +1,4 @@
 export interface BentoGuardConfig {
-  agentX25519PrivateKey: string; // Used for BSIT encryption
-  agentX25519PublicKey: string;  // Used for BSIT key exchange
   agentWalletPrivateKey: string; // Used for signing requests (Identity)
   network?: 'solana' | 'ethereum' | 'base';
   timeout?: number;

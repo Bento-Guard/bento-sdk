@@ -1,5 +1,4 @@
 import { BentoProtectOptions, BentoGuardConfig, AnalysisResult } from '../types';
-import { EncryptionService as BsitProtocol } from '../crypto/bsit';
 import { IdentityService } from '../crypto/identity';
 import { ApiClient } from '../api/client';
 import { BentoError, BentoErrorCode } from '../errors/bento-error';
@@ -7,7 +6,6 @@ import { DEFAULT_TIMEOUT } from '../constants';
 
 export class BentoGuardClient {
   private static instance: BentoGuardClient;
-  private bsit: BsitProtocol;
   private identity: IdentityService;
   private api: ApiClient;
   private config: BentoGuardConfig;
@@ -15,7 +13,6 @@ export class BentoGuardClient {
 
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
-    this.bsit = new BsitProtocol();
     this.identity = new IdentityService();
     this.api = new ApiClient();
   }
@@ -43,14 +40,12 @@ export class BentoGuardClient {
 
   private loadConfigFromEnv(): BentoGuardConfig {
     const config: BentoGuardConfig = {
-      agentX25519PrivateKey: process.env.AGENT_X25519_PRIVATE_KEY || '',
-      agentX25519PublicKey: process.env.AGENT_X25519_PUBLIC_KEY || '',
       agentWalletPrivateKey: process.env.AGENT_WALLET_PRIVATE_KEY || '',
       network: (process.env.BENTO_NETWORK as any) || 'solana',
     };
 
-    if (!config.agentX25519PrivateKey || !config.agentWalletPrivateKey) {
-      console.warn('BentoGuard: Missing required credentials (X25519 or Wallet Private Key) in environment.');
+    if (!config.agentWalletPrivateKey) {
+      console.warn('BentoGuard: Missing required Agent Wallet Private Key in environment.');
     }
 
     return config;
@@ -64,37 +59,26 @@ export class BentoGuardClient {
     rawTransaction: string,
     options?: BentoProtectOptions
   ): Promise<AnalysisResult> {
-    if (!this.config.agentX25519PrivateKey || !this.config.agentWalletPrivateKey) {
-      throw new BentoError(BentoErrorCode.INVALID_CONFIG, 'Required keys not configured');
+    if (!this.config.agentWalletPrivateKey) {
+      throw new BentoError(BentoErrorCode.INVALID_CONFIG, 'Required wallet key not configured');
     }
 
     try {
-      // 1. Fetch System Key for BSIT Encryption
-      if (!this.systemPublicKey) {
-        this.systemPublicKey = await this.api.getSystemPublicKey();
-      }
-      const systemPublicKey = this.systemPublicKey;
+      // 1. Mock "Encryption" by using instruction directly
+      const mockEncryptedPayloadStr = instruction;
 
-      // 2. Encrypt instruction via BSIT Protocol (Communication Layer)
-      const encryptedPayload = await this.bsit.encrypt(
-        instruction,
-        systemPublicKey,
-        this.config.agentX25519PrivateKey
-      );
-      const encryptedPayloadStr = JSON.stringify(encryptedPayload);
-
-      // 3. Sign the combined payload (Identity Layer)
-      const { signature, publicKey: walletAddress } = this.identity.signPayload(
-        encryptedPayloadStr,
+      // 2. Sign the combined payload (Identity Layer)
+      const { signature, publicKey: agentAddress } = this.identity.signPayload(
+        mockEncryptedPayloadStr,
         rawTransaction,
         this.config.agentWalletPrivateKey
       );
 
-      // 4. Submit to Bento Guard Backend
+      // 3. Submit to Bento Guard Backend
       const result = await this.api.postTransaction({
-        agent_pubkey: this.config.agentX25519PublicKey,
-        wallet_address: walletAddress,
-        encrypted_payload: encryptedPayloadStr,
+        agent_address: agentAddress,
+        wallet_address: agentAddress,
+        encrypted_payload: mockEncryptedPayloadStr,
         signature: signature,
         base64_tx: rawTransaction,
         network: this.config.network || 'solana',

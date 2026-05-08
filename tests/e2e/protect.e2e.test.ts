@@ -16,18 +16,10 @@ describe('BentoGuardClient protect() E2E', () => {
   });
 
   it('should block high risk actions', async () => {
-    const agentKeyPair = generateKeyPairSync('x25519');
-    const systemKeyPair = generateKeyPairSync('x25519');
     const walletKeyPair = nacl.sign.keyPair();
-
-    const agentPrivHex = agentKeyPair.privateKey.export({ type: 'pkcs8', format: 'der' }).toString('hex');
-    const agentPubHex = agentKeyPair.publicKey.export({ type: 'spki', format: 'der' }).toString('hex');
     const walletPrivBs58 = bs58.encode(walletKeyPair.secretKey);
-    const systemPubHex = systemKeyPair.publicKey.export({ type: 'spki', format: 'der' }).toString('hex');
 
     const config = {
-      agentX25519PrivateKey: agentPrivHex,
-      agentX25519PublicKey: agentPubHex,
       agentWalletPrivateKey: walletPrivBs58,
     };
 
@@ -40,8 +32,6 @@ describe('BentoGuardClient protect() E2E', () => {
     // @ts-ignore
     client.api = new mockApiClient();
     
-    // @ts-ignore
-    client.api.getSystemPublicKey.mockResolvedValue(systemPubHex);
     // @ts-ignore
     client.api.postTransaction.mockResolvedValue({
       success: true,

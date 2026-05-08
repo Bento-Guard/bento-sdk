@@ -29,7 +29,7 @@ export class ApiClient {
   }
 
   public async postTransaction(payload: {
-    agent_pubkey: string;
+    agent_address: string;
     wallet_address: string;
     encrypted_payload: string;
     signature: string;

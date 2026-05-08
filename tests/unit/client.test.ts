@@ -15,13 +15,11 @@ describe('BentoGuardClient Singleton', () => {
 
   it('should return the same instance when initialized multiple times', () => {
     const config = {
-      agentX25519PrivateKey: 'test-priv',
-      agentX25519PublicKey: 'test-pub',
       agentWalletPrivateKey: 'test-wallet',
     };
 
     const instance1 = BentoGuardClient.initialize(config);
-    const instance2 = BentoGuardClient.initialize({ ...config, agentX25519PublicKey: 'another-pub' });
+    const instance2 = BentoGuardClient.initialize({ ...config });
     const instance3 = BentoGuardClient.getInstance();
 
     expect(instance1).toBe(instance2);

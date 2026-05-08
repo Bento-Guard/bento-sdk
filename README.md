@@ -27,8 +27,6 @@ The setup wizard helps you configure the following environment variables in a `.
 
 | Variable | Description |
 |----------|-------------|
-| `AGENT_X25519_PRIVATE_KEY` | Your Agent's X25519 Private Key for encryption |
-| `AGENT_X25519_PUBLIC_KEY` | Your Agent's X25519 Public Key |
 | `AGENT_WALLET_PRIVATE_KEY` | Your Agent's Solana Wallet Private Key (Base58) |
 
 
@@ -52,8 +50,6 @@ import bs58 from 'bs58';
 
 // 1. Initialize SDK (Do this once at startup)
 BentoClient.initialize({
-  agentX25519PrivateKey: process.env.AGENT_X25519_PRIVATE_KEY!,
-  agentX25519PublicKey: process.env.AGENT_X25519_PUBLIC_KEY!,
   agentWalletPrivateKey: process.env.AGENT_WALLET_PRIVATE_KEY!, // Your BS58 Private Key
 });
 
@@ -105,8 +101,8 @@ async function executeAgentAction() {
 
 ## 🛡️ Security Features
 
-- **BSIT Protocol**: End-to-end encrypted tunneling ensures your agent's instructions are never visible to ISPs or malicious actors in transit.
-- **Identity Verification**: Every request is signed with your agent's wallet key, ensuring that only authorized agents can access your security policies.
+- **Wallet-Based Identity**: Every request is cryptographically signed with your agent's wallet key, ensuring that only authorized agents can access security policies.
+- **On-chain Verification**: The identity flow is natively compatible with Solana wallet standards, simplifying onboarding and management.
 - **Firewall Mode**: Automatically throws an exception if the AI risk score exceeds safety thresholds, preventing malicious code from executing transactions.
 
 ## 📝 License
