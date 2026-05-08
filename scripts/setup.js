@@ -94,43 +94,44 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
     const { configNow } = await prompts({
       type: 'select',
       name: 'configNow',
-      message: 'Would you like to configure your Bento credentials now?',
+      message: 'Would you like us to help you configure your credentials?',
       choices: [
-        { title: 'Yes, I have my keys from the Bento Dashboard', value: 'yes' },
-        { title: 'No, I will configure the .env file later', value: 'no' }
+        { title: 'Yes, let\'s set them up now', value: 'yes' },
+        { title: 'No, I will configure the .env file manually later', value: 'no' }
       ],
       initial: 0
     });
 
     if (configNow === 'yes') {
-      console.log(chalk.cyan('\n🔑 Entering Credentials:'));
+      console.log(chalk.cyan('\n🔑 Entering Credentials (copy these from your Dashboard):'));
       const credentials = await prompts([
         {
           type: 'password',
           name: 'walletKey',
           message: 'Agent Wallet Private Key (Base58):'
-        },
-        {
-          type: 'password',
-          name: 'xPrivate',
-          message: 'Agent X25519 Private Key (Hex):'
-        },
-        {
-          type: 'text',
-          name: 'xPublic',
-          message: 'Agent X25519 Public Key (Hex):'
         }
       ]);
 
-      if (credentials.walletKey && credentials.xPrivate && credentials.xPublic) {
+      if (credentials.walletKey) {
         const envPath = path.join(process.cwd(), '.env');
-        const envContent = `
+        
+        // Append or create .env
+        let envContent = '';
+        if (fs.existsSync(envPath)) {
+          envContent = fs.readFileSync(envPath, 'utf8');
+        }
+
+        const bentoEnv = `
 # Bento Guard Credentials
-# DO NOT COMMIT THIS FILE TO VERSION CONTROL
-AGENT_X25519_PRIVATE_KEY=${credentials.xPrivate}
-AGENT_X25519_PUBLIC_KEY=${credentials.xPublic}
 AGENT_WALLET_PRIVATE_KEY=${credentials.walletKey}
+BENTO_NETWORK=solana
         `.trim();
+
+        if (envContent.includes('AGENT_WALLET_PRIVATE_KEY')) {
+          envContent = envContent.replace(/AGENT_WALLET_PRIVATE_KEY=.*/, `AGENT_WALLET_PRIVATE_KEY=${credentials.walletKey}`);
+        } else {
+          envContent += (envContent ? '\n\n' : '') + bentoEnv;
+        }
 
         fs.writeFileSync(envPath, envContent);
         console.log(chalk.green('\n✅ Credentials securely saved to .env'));
@@ -152,7 +153,7 @@ AGENT_WALLET_PRIVATE_KEY=${credentials.walletKey}
 
     if (generateExample) {
       const exampleContent = `
-import { BentoClient, protect } from '@bentoguard/sdk';
+import { BentoGuardClient, protect } from '@bentoguard/sdk';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -161,15 +162,11 @@ dotenv.config();
 async function runSecurityAudit() {
   console.log("🛡️ Initializing Bento Guard...");
 
-  // Initialize with your Agent credentials
-  BentoClient.initialize({
-    agentX25519PrivateKey: process.env.AGENT_X25519_PRIVATE_KEY || "YOUR_KEY",
-    agentX25519PublicKey: process.env.AGENT_X25519_PUBLIC_KEY || "YOUR_KEY",
-    agentWalletPrivateKey: process.env.AGENT_WALLET_PRIVATE_KEY || "YOUR_KEY",
-  });
+  // Initialize the client (it will automatically use AGENT_WALLET_PRIVATE_KEY from .env)
+  BentoGuardClient.initialize();
 
-  const instruction = "Example: Transfer 1.0 SOL to Unknown Wallet";
-  const mockTransactionData = "SGVsbG8gQmVudG8h";
+  const instruction = "Example: Swap 0.5 SOL for JUP on Jupiter DEX";
+  const mockTransactionData = "SGVsbG8gQmVudG8h"; // Placeholder for actual transaction payload
 
   try {
     console.log("🔍 Auditing transaction...");
@@ -178,6 +175,14 @@ async function runSecurityAudit() {
     console.log("\\n--- Audit Result ---");
     console.log("Recommendation:", audit.recommendation);
     console.log("Reasoning:", audit.reasoning);
+    
+    if (audit.recommendation === 'ALLOW') {
+      console.log("✅ Proceeding with transaction...");
+    } else if (audit.recommendation === 'ESCALATED') {
+      console.log("⚠️  Waiting for manual approval in Bento Dashboard...");
+    } else {
+      console.log("❌ Transaction blocked by security policy.");
+    }
   } catch (err) {
     console.error("❌ Guard Error:", err.message);
   }
@@ -196,9 +201,9 @@ runSecurityAudit();
 
   // Execute with top-level error handling
   setup().catch(err => {
-    // Fail silently to avoid messy stack traces in postinstall
+    // Fail silently
   });
 
 } catch (err) {
-  // Graceful degradation if dependencies are missing
+  // Graceful degradation
 }
