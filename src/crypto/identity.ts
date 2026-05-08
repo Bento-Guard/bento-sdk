@@ -13,9 +13,9 @@ export class IdentityService {
       const keyPair = nacl.sign.keyPair.fromSecretKey(privateKeyBytes);
       
       const combinedPayload = `${encryptedPayload}.${base64Tx}`;
-      const hash = createHash('sha256').update(combinedPayload).digest();
+      const messageBytes = new TextEncoder().encode(combinedPayload);
       
-      const signatureBytes = nacl.sign.detached(hash, keyPair.secretKey);
+      const signatureBytes = nacl.sign.detached(messageBytes, keyPair.secretKey);
       
       return {
         signature: bs58.encode(signatureBytes),
