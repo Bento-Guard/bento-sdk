@@ -30,18 +30,37 @@ export class IdentityService {
   }
 
   /**
-   * Verifies a signature of a hashed payload
+   * Signs a general message string
    */
-  public verifyPayloadSignature(encryptedPayload: string, base64Tx: string, signatureBs58: string, publicKeyBs58: string): boolean {
+  public signMessage(message: string, privateKeyBs58: string): string {
     try {
-      const combinedPayload = `${encryptedPayload}.${base64Tx}`;
-      const hash = createHash('sha256').update(combinedPayload).digest();
-      const signatureBytes = bs58.decode(signatureBs58);
-      const publicKeyBytes = bs58.decode(publicKeyBs58);
+      const privateKeyBytes = bs58.decode(privateKeyBs58);
+      const keyPair = nacl.sign.keyPair.fromSecretKey(privateKeyBytes);
+      const messageBytes = new TextEncoder().encode(message);
       
-      return nacl.sign.detached.verify(hash, signatureBytes, publicKeyBytes);
-    } catch {
-      return false;
+      const signatureBytes = nacl.sign.detached(messageBytes, keyPair.secretKey);
+      return bs58.encode(signatureBytes);
+    } catch (error: any) {
+      throw new BentoError(
+        BentoErrorCode.UNAUTHORIZED,
+        `Failed to sign message: ${error.message}`
+      );
+    }
+  }
+
+  /**
+   * Derives public key from private key
+   */
+  public getPublicKey(privateKeyBs58: string): string {
+    try {
+      const privateKeyBytes = bs58.decode(privateKeyBs58);
+      const keyPair = nacl.sign.keyPair.fromSecretKey(privateKeyBytes);
+      return bs58.encode(keyPair.publicKey);
+    } catch (error: any) {
+      throw new BentoError(
+        BentoErrorCode.INVALID_CONFIG,
+        `Failed to derive public key: ${error.message}`
+      );
     }
   }
 }

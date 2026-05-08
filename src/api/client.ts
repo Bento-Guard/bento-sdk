@@ -51,9 +51,14 @@ export class ApiClient {
     }
   }
 
-  public async updateActionDecision(actionId: string, decision: 'ALLOW' | 'BLOCKED'): Promise<any> {
+  public async updateActionDecision(actionId: string, data: {
+    decision: 'ALLOW' | 'BLOCKED';
+    reasoning?: string;
+    signature: string;
+    publicKey: string;
+  }): Promise<any> {
     try {
-      const response = await this.axiosInstance.post(`/api/v1/actions/${actionId}/decision`, { decision });
+      const response = await this.axiosInstance.post(`/api/v1/actions/${actionId}/decision`, data);
       return response.data.data;
     } catch (error: any) {
       throw BentoError.fromError(error);

@@ -108,8 +108,17 @@ export class BentoGuardClient {
   /**
    * Manually approve or block an escalated action.
    */
-  public async updateActionDecision(actionId: string, decision: 'ALLOW' | 'BLOCKED'): Promise<any> {
-    return this.api.updateActionDecision(actionId, decision);
+  public async updateActionDecision(actionId: string, decision: 'ALLOW' | 'BLOCKED', reasoning?: string): Promise<any> {
+    const message = `Bento Guard Approval: ${actionId} - ${decision}`;
+    const signature = this.identity.signMessage(message, this.config.agentWalletPrivateKey);
+    const publicKey = this.identity.getPublicKey(this.config.agentWalletPrivateKey);
+
+    return this.api.updateActionDecision(actionId, {
+      decision,
+      reasoning,
+      signature,
+      publicKey
+    });
   }
 
   /**
