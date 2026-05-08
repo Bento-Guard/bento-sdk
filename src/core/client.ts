@@ -2,7 +2,6 @@ import { BentoProtectOptions, BentoGuardConfig, AnalysisResult } from '../types'
 import { IdentityService } from '../crypto/identity';
 import { ApiClient } from '../api/client';
 import { BentoError, BentoErrorCode } from '../errors/bento-error';
-import { DEFAULT_TIMEOUT } from '../constants';
 
 export class BentoGuardClient {
   private static instance: BentoGuardClient;
@@ -14,7 +13,7 @@ export class BentoGuardClient {
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
     this.identity = new IdentityService();
-    this.api = new ApiClient();
+    this.api = new ApiClient(this.config.timeout);
   }
 
   /**
@@ -82,7 +81,7 @@ export class BentoGuardClient {
         signature: signature,
         base64_tx: rawTransaction,
         network: this.config.network || 'solana',
-      });
+      }, options?.timeout);
 
       // 5. Firewall: Automatically block high-risk actions
       if (result.recommendation === 'BLOCKED') {

@@ -5,10 +5,18 @@ import { BENTO_GUARD_DEFAULT_URL, DEFAULT_TIMEOUT } from '../constants';
 export class ApiClient {
   private axiosInstance: AxiosInstance;
 
-  constructor() {
+  constructor(timeout?: number) {
+    const configuredTimeout =
+      timeout ??
+      Number(
+        process.env.BENTO_PROTECT_TIMEOUT_MS ||
+          process.env.BENTO_TIMEOUT_MS ||
+          DEFAULT_TIMEOUT,
+      );
+
     this.axiosInstance = axios.create({
       baseURL: BENTO_GUARD_DEFAULT_URL,
-      timeout: DEFAULT_TIMEOUT,
+      timeout: configuredTimeout,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -37,9 +45,13 @@ export class ApiClient {
     signature: string;
     base64_tx: string;
     network: string;
-  }): Promise<AnalysisResult> {
+  }, timeout?: number): Promise<AnalysisResult> {
     try {
-      const response = await this.axiosInstance.post('/api/v1/transactions', payload);
+      const response = await this.axiosInstance.post(
+        '/api/v1/transactions',
+        payload,
+        timeout ? { timeout } : undefined,
+      );
       if (!response.data?.data) {
         throw new BentoError(BentoErrorCode.NETWORK_ERROR, 'Invalid response format');
       }
