@@ -22,4 +22,4 @@ ${CYAN}${BOLD}------------------------------------------------------------------
 process.stderr.write(BANNER + '\n');
 process.stderr.write(`${GREEN}${BOLD}✨ Bento Guard SDK installed successfully!${RESET}\n`);
 process.stderr.write(`To configure your security credentials, please run:\n`);
-process.stderr.write(`${CYAN}${BOLD}npx bento-setup${RESET}\n\n`);
+process.stderr.write(`${CYAN}${BOLD}npx bentoguard${RESET}\n\n`);
