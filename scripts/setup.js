@@ -31,7 +31,7 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
  ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝      ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ 
                                                                             
                      🛡️  ${COLORS.GOLD}AI-POWERED SECURITY INFRASTRUCTURE${COLORS.RESET}${COLORS.CYAN}${COLORS.BOLD}
----------------------------------------------------------------------------------${COLORS.RESET}
+ ---------------------------------------------------------------------------------${COLORS.RESET}
 `;
 
   function printBanner() {
@@ -48,162 +48,175 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
   }
 
   async function setup() {
-    printBanner();
+    try {
+      printBanner();
 
-    if (!process.stdout.isTTY) {
-      console.log(chalk.yellow('⚠️  Interactive session required.'));
-      console.log(chalk.white('Please run: ') + chalk.cyan('npx bentoguard\n'));
-      return;
-    }
-
-    // --- STEP 0: PROJECT INITIALIZATION ---
-    const hasPackageJson = fs.existsSync(path.join(process.cwd(), 'package.json'));
-    if (!hasPackageJson) {
-      console.log(chalk.yellow('📝 No package.json found. Initializing project structure...'));
-      try {
-        execSync('npm init -y', { stdio: 'ignore' });
-        console.log(chalk.green('✅ Project initialized successfully.\n'));
-      } catch (e) {
-        console.log(chalk.red('⚠️  Could not initialize project automatically.\n'));
+      if (!process.stdout.isTTY) {
+        console.log(chalk.yellow('⚠️  Interactive session required.'));
+        console.log(chalk.white('Please run: ') + chalk.cyan('npx bentoguard\n'));
+        return;
       }
-    }
 
-    // --- STEP 1: SDK INSTALLATION ---
-    const isInstalled = fs.existsSync(path.join(process.cwd(), 'node_modules', '@bentoguard', 'sdk'));
-    if (!isInstalled) {
-      const { install } = await prompts({
-        type: 'confirm',
-        name: 'install',
-        message: 'Bento Guard SDK is missing. Install it now?',
-        initial: true
+      // --- STEP 0: PROJECT INITIALIZATION ---
+      const hasPackageJson = fs.existsSync(path.join(process.cwd(), 'package.json'));
+      if (!hasPackageJson) {
+        console.log(chalk.yellow('📝 No package.json found. Initializing project structure...'));
+        try {
+          execSync('npm init -y', { stdio: 'ignore' });
+          console.log(chalk.green('✅ Project initialized successfully.\n'));
+        } catch (e) {
+          console.log(chalk.red('⚠️  Could not initialize project automatically.\n'));
+        }
+      }
+
+      // --- STEP 1: SDK INSTALLATION ---
+      const isInstalled = fs.existsSync(path.join(process.cwd(), 'node_modules', '@bentoguard', 'sdk'));
+      if (!isInstalled) {
+        const { install } = await prompts({
+          type: 'confirm',
+          name: 'install',
+          message: 'Bento Guard SDK is missing. Install it now?',
+          initial: true
+        });
+
+        if (install) {
+          process.stdout.write(chalk.yellow('\n📦 Downloading security modules...'));
+          try {
+            execSync('npm install @bentoguard/sdk', { stdio: 'inherit' });
+            console.log(chalk.green('\n✅ SDK installation complete.\n'));
+          } catch (e) {
+            console.log(chalk.red('\n❌ Installation failed. Please run "npm install @bentoguard/sdk" manually.\n'));
+          }
+        }
+      }
+
+      // --- STEP 1.5: DASHBOARD CHECK ---
+      console.log(chalk.cyan.bold('\nWelcome to Bento Guard! 🛡️'));
+      console.log(chalk.white('The AI-powered security infrastructure for autonomous agents.\n'));
+      
+      const { hasRegistered } = await prompts({
+        type: 'toggle',
+        name: 'hasRegistered',
+        message: 'Have you registered your Agent on the Bento Guard Dashboard yet?',
+        initial: true,
+        active: 'Yes',
+        inactive: 'Not yet'
       });
 
-      if (install) {
-        process.stdout.write(chalk.yellow('\n📦 Downloading security modules...'));
-        try {
-          execSync('npm install @bentoguard/sdk', { stdio: 'inherit' });
-          console.log(chalk.green('\n✅ SDK installation complete.\n'));
-        } catch (e) {
-          console.log(chalk.red('\n❌ Installation failed. Please run "npm install @bentoguard/sdk" manually.\n'));
-        }
+      if (!hasRegistered) {
+        console.log(chalk.cyan('\nNo problem! Here is how to get started:'));
+        console.log(chalk.yellow('Step 1: Register your Agent'));
+        console.log(chalk.white(`Go to ${chalk.cyan.underline('https://app.bentoguard.xyz')} and register your Agent's wallet address.`));
+        console.log(chalk.white('This establishes your Agent\'s identity on the Bento network.\n'));
+
+        console.log(chalk.yellow('Step 2: Secure with SDK'));
+        console.log(chalk.white('The SDK uses your Agent\'s Private Key to sign and protect every transaction.'));
+        console.log(chalk.white(`${chalk.italic('Note: Your key is stored locally in your .env file and never leaves your machine.')}\n`));
       }
-    }
 
-    // --- STEP 2: CREDENTIAL CONFIGURATION ---
-    console.log(chalk.white.bold('--- Environment Configuration ---'));
-    const { configNow } = await prompts({
-      type: 'select',
-      name: 'configNow',
-      message: 'Would you like us to help you configure your credentials?',
-      choices: [
-        { title: 'Yes, let\'s set them up now', value: 'yes' },
-        { title: 'No, I will configure the .env file manually later', value: 'no' }
-      ],
-      initial: 0
-    });
+      // --- STEP 2: CREDENTIAL CONFIGURATION ---
+      console.log(chalk.white.bold('--- Environment Configuration ---'));
+      const { configNow } = await prompts({
+        type: 'select',
+        name: 'configNow',
+        message: 'Would you like us to help you configure your credentials?',
+        choices: [
+          { title: 'Yes, I have my Agent\'s Private Key ready', value: 'yes' },
+          { title: 'No, I will configure it manually later', value: 'no' }
+        ],
+        initial: 0
+      });
 
-    if (configNow === 'yes') {
-      console.log(chalk.cyan('\n🔑 Entering Credentials (copy these from your Dashboard):'));
-      const credentials = await prompts([
-        {
-          type: 'password',
-          name: 'walletKey',
-          message: 'Agent Wallet Private Key (Base58):'
-        }
-      ]);
+      if (configNow === 'yes') {
+        console.log(chalk.cyan('\n🔑 Enter your Agent\'s Private Key (this will be saved to your local .env file):'));
+        const credentials = await prompts([
+          {
+            type: 'password',
+            name: 'walletKey',
+            message: 'Agent Wallet Private Key (Base58):'
+          }
+        ]);
 
-      if (credentials.walletKey) {
-        const envPath = path.join(process.cwd(), '.env');
-        
-        // Append or create .env
-        let envContent = '';
-        if (fs.existsSync(envPath)) {
-          envContent = fs.readFileSync(envPath, 'utf8');
-        }
+        if (credentials.walletKey) {
+          const envPath = path.join(process.cwd(), '.env');
+          
+          // Append or create .env
+          let envContent = '';
+          if (fs.existsSync(envPath)) {
+            envContent = fs.readFileSync(envPath, 'utf8');
+          }
 
-        const bentoEnv = `
+          const bentoEnv = `
 # Bento Guard Credentials
 AGENT_WALLET_PRIVATE_KEY=${credentials.walletKey}
 BENTO_NETWORK=solana
-        `.trim();
+          `.trim();
 
-        if (envContent.includes('AGENT_WALLET_PRIVATE_KEY')) {
-          envContent = envContent.replace(/AGENT_WALLET_PRIVATE_KEY=.*/, `AGENT_WALLET_PRIVATE_KEY=${credentials.walletKey}`);
-        } else {
-          envContent += (envContent ? '\n\n' : '') + bentoEnv;
+          if (envContent.includes('AGENT_WALLET_PRIVATE_KEY')) {
+            envContent = envContent.replace(/AGENT_WALLET_PRIVATE_KEY=.*/, `AGENT_WALLET_PRIVATE_KEY=${credentials.walletKey}`);
+          } else {
+            envContent += (envContent ? '\n\n' : '') + bentoEnv;
+          }
+
+          fs.writeFileSync(envPath, envContent);
+          console.log(chalk.green('\n✅ Credentials securely saved to .env'));
         }
-
-        fs.writeFileSync(envPath, envContent);
-        console.log(chalk.green('\n✅ Credentials securely saved to .env'));
+      } else {
+        console.log(chalk.gray('\nSkipping credential setup. You can re-run this with "npx bentoguard".'));
       }
-    } else {
-      console.log(chalk.gray('\nSkipping credential setup. You can re-run this with "npx bentoguard".'));
+
+      // --- STEP 3: INTEGRATION SCAFFOLDING ---
+      console.log(chalk.white.bold('\n--- Integration Scaffolding ---'));
+      const { generateExample } = await prompts({
+        type: 'toggle',
+        name: 'generateExample',
+        message: 'Create a sample integration file (bento-demo.ts)?',
+        initial: true,
+        active: 'yes',
+        inactive: 'no'
+      });
+
+      if (generateExample) {
+        const sampleSrcDir = path.join(__dirname, '..', 'samples', 'finance');
+        const sampleDestDir = path.join(process.cwd(), 'bento-sample');
+
+        try {
+          if (!fs.existsSync(sampleDestDir)) {
+            fs.mkdirSync(sampleDestDir, { recursive: true });
+          }
+
+          const filesToCopy = fs.readdirSync(sampleSrcDir);
+          filesToCopy.forEach(file => {
+            const src = path.join(sampleSrcDir, file);
+            const dest = path.join(sampleDestDir, file);
+            if (fs.existsSync(src) && fs.statSync(src).isFile()) {
+              fs.copyFileSync(src, dest);
+            }
+          });
+
+          console.log(chalk.green('\n✅ Created "bento-sample" directory with full Finance Sandbox'));
+          console.log(chalk.cyan('\nTo start the demo, run:'));
+          console.log(chalk.white('cd bento-sample && npm install && npx ts-node main.ts'));
+        } catch (copyErr) {
+          console.error(chalk.red('\nCould not copy sample files:'), copyErr.message);
+        }
+      }
+
+      console.log(chalk.bold.green('\n--- Setup Complete! ---'));
+      console.log(chalk.white('Your Agent is now ready to be protected by Bento Guard.'));
+      printFooter();
+      
+    } catch (err) {
+      if (err.message === 'User cancelled') {
+        console.log(chalk.yellow('\nSetup cancelled. You can run it again anytime.'));
+      } else {
+        console.error(chalk.red('\nAn error occurred during setup:'), err);
+      }
     }
-
-    // --- STEP 3: INTEGRATION SCAFFOLDING ---
-    console.log(chalk.white.bold('\n--- Integration Scaffolding ---'));
-    const { generateExample } = await prompts({
-      type: 'toggle',
-      name: 'generateExample',
-      message: 'Create a sample integration file (bento-demo.ts)?',
-      initial: true,
-      active: 'yes',
-      inactive: 'no'
-    });
-
-    if (generateExample) {
-      const exampleContent = `
-import { BentoGuardClient, protect } from '@bentoguard/sdk';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
-
-async function runSecurityAudit() {
-  console.log("🛡️ Initializing Bento Guard...");
-
-  // Initialize the client (it will automatically use AGENT_WALLET_PRIVATE_KEY from .env)
-  BentoGuardClient.initialize();
-
-  const instruction = "Example: Swap 0.5 SOL for JUP on Jupiter DEX";
-  const mockTransactionData = "SGVsbG8gQmVudG8h"; // Placeholder for actual transaction payload
-
-  try {
-    console.log("🔍 Auditing transaction...");
-    const audit = await protect(instruction, mockTransactionData);
-    
-    console.log("\\n--- Audit Result ---");
-    console.log("Recommendation:", audit.recommendation);
-    console.log("Reasoning:", audit.reasoning);
-    
-    if (audit.recommendation === 'ALLOW') {
-      console.log("✅ Proceeding with transaction...");
-    } else if (audit.recommendation === 'ESCALATED') {
-      console.log("⚠️  Waiting for manual approval in Bento Dashboard...");
-    } else {
-      console.log("❌ Transaction blocked by security policy.");
-    }
-  } catch (err) {
-    console.error("❌ Guard Error:", err.message);
-  }
-}
-
-runSecurityAudit();
-      `.trim();
-      fs.writeFileSync(path.join(process.cwd(), 'bento-demo.ts'), exampleContent);
-      console.log(chalk.green('🚀 Scaffold created: bento-demo.ts'));
-    }
-
-    // --- STEP 4: COMPLETION ---
-    console.log(chalk.green.bold('\n✨ Bento Guard setup successfully finished!'));
-    printFooter();
   }
 
-  // Execute with top-level error handling
-  setup().catch(err => {
-    // Fail silently
-  });
+  setup();
 
 } catch (err) {
-  // Graceful degradation
+  // Silent fail if dependencies are missing during initial require
 }
