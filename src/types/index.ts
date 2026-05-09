@@ -1,6 +1,9 @@
+import { BentoNetwork } from '../constants';
+
 export interface BentoGuardConfig {
   agentWalletPrivateKey: string; // Used for signing requests (Identity)
-  network?: 'solana' | 'ethereum' | 'base';
+  network?: BentoNetwork | 'mainnet' | 'devnet';
+  endpoint?: string; // Optional: Override default API URL
   timeout?: number;
 }
 

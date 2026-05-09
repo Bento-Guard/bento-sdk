@@ -3,6 +3,8 @@ import { IdentityService } from '../crypto/identity';
 import { ApiClient } from '../api/client';
 import { BentoError, BentoErrorCode } from '../errors/bento-error';
 
+import { BentoNetwork, NETWORK_CONFIG } from '../constants';
+
 export class BentoGuardClient {
   private static instance: BentoGuardClient;
   private identity: IdentityService;
@@ -13,7 +15,12 @@ export class BentoGuardClient {
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
     this.identity = new IdentityService();
-    this.api = new ApiClient(this.config.timeout);
+    
+    // Resolve API URL based on network or explicit config
+    const network = (this.config.network as BentoNetwork) || BentoNetwork.TESTNET;
+    const baseUrl = this.config.endpoint || NETWORK_CONFIG[network]?.endpoint || NETWORK_CONFIG[BentoNetwork.TESTNET].endpoint;
+    
+    this.api = new ApiClient(baseUrl, this.config.timeout);
   }
 
   /**
@@ -40,7 +47,9 @@ export class BentoGuardClient {
   private loadConfigFromEnv(): BentoGuardConfig {
     const config: BentoGuardConfig = {
       agentWalletPrivateKey: process.env.AGENT_WALLET_PRIVATE_KEY || '',
-      network: (process.env.BENTO_NETWORK as any) || 'solana',
+      network: (process.env.BENTO_NETWORK as BentoNetwork) || BentoNetwork.TESTNET,
+      endpoint: process.env.BENTO_ENDPOINT || process.env.BENTO_API_URL,
+      timeout: process.env.BENTO_TIMEOUT_MS ? Number(process.env.BENTO_TIMEOUT_MS) : undefined,
     };
 
     if (!config.agentWalletPrivateKey) {

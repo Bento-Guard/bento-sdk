@@ -5,7 +5,7 @@ import { BENTO_GUARD_DEFAULT_URL, DEFAULT_TIMEOUT } from '../constants';
 export class ApiClient {
   private axiosInstance: AxiosInstance;
 
-  constructor(timeout?: number) {
+  constructor(baseUrl?: string, timeout?: number) {
     const configuredTimeout =
       timeout ??
       Number(
@@ -15,7 +15,7 @@ export class ApiClient {
       );
 
     this.axiosInstance = axios.create({
-      baseURL: BENTO_GUARD_DEFAULT_URL,
+      baseURL: baseUrl || BENTO_GUARD_DEFAULT_URL,
       timeout: configuredTimeout,
       headers: {
         'Content-Type': 'application/json',
