@@ -237,11 +237,11 @@ GEMINI_MODEL=gemini-2.5-flash
 
           console.log(chalk.yellow('📦 Installing dependencies...'));
           try {
-            execSync('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58 axios', { stdio: 'inherit' });
+            execSync('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58 axios @types/node', { stdio: 'inherit' });
             console.log(chalk.green('\n✅ Dependencies installed.'));
           } catch (e) {
             console.log(chalk.gray('\nPlease run manual install:'));
-            console.log(chalk.white('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58 axios'));
+            console.log(chalk.white('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58 axios @types/node'));
           }
 
           console.log(chalk.cyan('\nTo run your protected Agent:'));
