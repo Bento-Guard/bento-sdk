@@ -91,10 +91,11 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
         }
       }
 
-      // --- STEP 1.5: DASHBOARD CHECK ---
       console.log(chalk.cyan.bold('\nWelcome to Bento Guard! 🛡️'));
       console.log(chalk.white('The AI-powered security infrastructure for autonomous agents.\n'));
-      
+
+      // --- DASHBOARD CHECK ---
+      console.log(chalk.white.bold('--- STEP 0: Check Dashboard Registration ---'));
       const { hasRegistered } = await prompts({
         type: 'toggle',
         name: 'hasRegistered',
@@ -108,15 +109,50 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
         console.log(chalk.cyan('\nNo problem! Here is how to get started:'));
         console.log(chalk.yellow('Step 1: Register your Agent'));
         console.log(chalk.white(`Go to ${chalk.cyan.underline('https://app.bentoguard.xyz')} and register your Agent's wallet address.`));
-        console.log(chalk.white('This establishes your Agent\'s identity on the Bento network.\n'));
+        console.log(chalk.yellow('Step 2: Get your API Key'));
+        console.log(chalk.white(`After registration, navigate to 'API Access' to generate your Secret Key.`));
+        console.log(chalk.yellow('Step 3: Return here and select "Yes" to continue setup\n'));
 
-        console.log(chalk.yellow('Step 2: Secure with SDK'));
-        console.log(chalk.white('The SDK uses your Agent\'s Private Key to sign and protect every transaction.'));
-        console.log(chalk.white(`${chalk.italic('Note: Your key is stored locally in your .env file and never leaves your machine.')}\n`));
+        // Force restart to get keys
+        const { restart } = await prompts({
+          type: 'confirm',
+          name: 'restart',
+          message: 'Would you like to restart the setup now that you have the dashboard?',
+          initial: true
+        });
+
+        if (restart) {
+          process.exit(0); // Exit and let user rerun
+        }
+        return; // Exit if they don't want to restart immediately
       }
 
-      // --- STEP 2: INTEGRATION SCAFFOLDING ---
-      console.log(chalk.white.bold('--- Integration Scaffolding ---'));
+      // --- CREDENTIAL CONFIGURATION ---
+      console.log(chalk.white.bold('--- Environment Configuration ---'));
+      const { configNow } = await prompts({
+        type: 'select',
+        name: 'configNow',
+        message: 'Would you like us to help you configure your credentials?',
+        choices: [
+          { title: "Yes, I have my Agent's Private Key ready", value: 'yes' },
+          { title: 'No, I will configure it manually later', value: 'no' }
+        ],
+        initial: 0
+      });
+
+      let walletKey = '';
+      if (configNow === 'yes') {
+        const walletPrompt = await prompts({
+          type: 'password',
+          name: 'key',
+          message: '🔑 Enter Agent Wallet Private Key (Base58):',
+          validate: value => value.length > 0 || 'Private key is required'
+        });
+        walletKey = walletPrompt.key;
+      }
+
+      // --- INTEGRATION SCAFFOLDING ---
+      console.log(chalk.white.bold('\n--- Integration Scaffolding ---'));
       const { generateExample } = await prompts({
         type: 'toggle',
         name: 'generateExample',
@@ -128,6 +164,7 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
 
       let geminiKey = '';
       if (generateExample) {
+        // --- GEMINI KEY (ONLY IF SAMPLE IS YES) ---
         const geminiPrompt = await prompts({
           type: 'password',
           name: 'key',
@@ -137,54 +174,35 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
         geminiKey = geminiPrompt.key;
       }
 
-      // --- STEP 3: CREDENTIAL CONFIGURATION ---
-      console.log(chalk.white.bold('\n--- Environment Configuration ---'));
-      const { configNow } = await prompts({
-        type: 'select',
-        name: 'configNow',
-        message: 'Configure your Agent Wallet Private Key now?',
-        choices: [
-          { title: 'Yes, save to .env', value: 'yes' },
-          { title: 'No, I will do it later', value: 'no' }
-        ],
-        initial: 0
-      });
+      // Save credentials to .env if any provided
+      if (walletKey || geminiKey) {
+        const envPath = path.join(process.cwd(), '.env');
+        let envContent = '';
+        if (fs.existsSync(envPath)) envContent = fs.readFileSync(envPath, 'utf8');
 
-      if (configNow === 'yes') {
-        const { walletKey } = await prompts({
-          type: 'password',
-          name: 'walletKey',
-          message: '🔑 Enter Agent Wallet Private Key (Base58):',
-          validate: value => value.length > 0 || 'Private key is required'
-        });
-
-        if (walletKey) {
-          const envPath = path.join(process.cwd(), '.env');
-          let envContent = '';
-          if (fs.existsSync(envPath)) envContent = fs.readFileSync(envPath, 'utf8');
-
-          const bentoEnv = `
+        const bentoEnv = `
 # Bento Guard Credentials
-AGENT_WALLET_PRIVATE_KEY=${walletKey}
+${walletKey ? `AGENT_WALLET_PRIVATE_KEY=${walletKey}` : '# AGENT_WALLET_PRIVATE_KEY='}
 BENTO_NETWORK=solana
 GEMINI_API_KEY=${geminiKey || 'your_gemini_api_key_here'}
 GEMINI_MODEL=gemini-2.0-flash
-          `.trim();
+        `.trim();
 
-          if (envContent.includes('AGENT_WALLET_PRIVATE_KEY')) {
-            envContent = envContent.replace(/AGENT_WALLET_PRIVATE_KEY=.*/, `AGENT_WALLET_PRIVATE_KEY=${walletKey}`);
-            if (geminiKey) {
-                envContent = envContent.includes('GEMINI_API_KEY') 
-                    ? envContent.replace(/GEMINI_API_KEY=.*/, `GEMINI_API_KEY=${geminiKey}`)
-                    : envContent + `\nGEMINI_API_KEY=${geminiKey}`;
-            }
+        if (walletKey && envContent.includes('AGENT_WALLET_PRIVATE_KEY')) {
+          envContent = envContent.replace(/AGENT_WALLET_PRIVATE_KEY=.*/, `AGENT_WALLET_PRIVATE_KEY=${walletKey}`);
+        } else if (walletKey) {
+          envContent += (envContent ? '\n\n' : '') + bentoEnv;
+        } else if (geminiKey) {
+          // If only geminiKey provided
+          if (envContent.includes('GEMINI_API_KEY')) {
+            envContent = envContent.replace(/GEMINI_API_KEY=.*/, `GEMINI_API_KEY=${geminiKey}`);
           } else {
             envContent += (envContent ? '\n\n' : '') + bentoEnv;
           }
-
-          fs.writeFileSync(envPath, envContent);
-          console.log(chalk.green('\n✅ Environment variables saved to .env'));
         }
+
+        fs.writeFileSync(envPath, envContent);
+        console.log(chalk.green('\n✅ Configuration saved to .env'));
       }
 
       // --- EXECUTE SCAFFOLDING ---
@@ -195,49 +213,57 @@ GEMINI_MODEL=gemini-2.0-flash
         try {
           const filesToCopy = fs.readdirSync(sampleSrcDir);
           filesToCopy.forEach(file => {
-            if (file === 'package.json' || file === '.env.example' || file === 'README.md') return; 
-            
+            if (file === 'package.json' || file === '.env.example' || file === 'README.md') return;
+
             const src = path.join(sampleSrcDir, file);
             const dest = path.join(destDir, file);
-            
+
             if (fs.existsSync(src) && fs.statSync(src).isFile()) {
               fs.copyFileSync(src, dest);
             }
           });
 
-          console.log(chalk.green('\n✅ Sample files copied to current directory.'));
-          console.log(chalk.yellow('📦 Installing required dependencies...'));
-          
+          console.log(chalk.green('\n✅ Sample files copied successfully.'));
+
+          // UPDATE PACKAGE.JSON SCRIPTS
+          const pkgPath = path.join(destDir, 'package.json');
+          if (fs.existsSync(pkgPath)) {
+            const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+            if (!pkg.scripts) pkg.scripts = {};
+            pkg.scripts["start"] = "ts-node main.ts";
+            pkg.scripts["demo"] = "APP_MODE=DEMO ts-node main.ts";
+            fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
+            console.log(chalk.green('✅ Updated package.json with "start" and "demo" scripts.'));
+          }
+
+          console.log(chalk.yellow('📦 Installing dependencies...'));
           try {
             execSync('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58', { stdio: 'inherit' });
             console.log(chalk.green('\n✅ Dependencies installed.'));
           } catch (e) {
-            console.log(chalk.gray('\nCould not run npm install automatically. Please run:'));
+            console.log(chalk.gray('\nPlease run manual install:'));
             console.log(chalk.white('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58'));
           }
 
-          console.log(chalk.cyan('\nTo start your Agent:'));
-          console.log(chalk.white('  npx ts-node main.ts'));
+          console.log(chalk.cyan('\nTo run your protected Agent:'));
+          console.log(chalk.white('  npm start'));
         } catch (copyErr) {
-          console.error(chalk.red('\nCould not copy sample files:'), copyErr.message);
+          console.error(chalk.red('\nScaffolding failed:'), copyErr.message);
         }
       }
 
       console.log(chalk.bold.green('\n--- Setup Complete! ---'));
-      console.log(chalk.white('Your Agent is now ready to be protected by Bento Guard.'));
       printFooter();
-      
+
     } catch (err) {
       if (err.message === 'User cancelled') {
-        console.log(chalk.yellow('\nSetup cancelled. You can run it again anytime.'));
+        console.log(chalk.yellow('\nSetup cancelled.'));
       } else {
-        console.error(chalk.red('\nAn error occurred during setup:'), err);
+        console.error(chalk.red('\nError:'), err);
       }
     }
   }
 
   setup();
 
-} catch (err) {
-  // Silent fail if dependencies are missing during initial require
-}
+} catch (err) { }
