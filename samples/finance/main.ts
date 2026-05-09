@@ -48,7 +48,10 @@ async function protectIntent(intent: string) {
   console.log(badge(" PROTECTING VIA BENTO GUARD ", color.white, color.bgBlue));
 
   try {
-    const analysis = await secureExecute(intent, txDraft.rawTx);
+    const analysis = await secureExecute({
+      instruction: intent,
+      rawTransaction: txDraft.rawTx,
+    });
     await handleAnalysisResult(analysis);
   } catch (error: any) {
     if (error?.details?.recommendation === "BLOCKED") {
