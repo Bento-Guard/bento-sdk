@@ -38,7 +38,6 @@
   "author": "Bento Team",
   "license": "MIT",
   "dependencies": {
-    "@bentoguard/sdk": "^1.0.6",
     "@solana/web3.js": "^1.91.0",
     "axios": "^1.7.0",
     "bs58": "^6.0.0",
