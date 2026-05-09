@@ -106,12 +106,12 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
       });
 
       if (!hasRegistered) {
-        console.log(chalk.cyan('\nNo problem! Here is how to get started:'));
         console.log(chalk.yellow('Step 1: Register your Agent'));
         console.log(chalk.white(`Go to ${chalk.cyan.underline('https://app.bentoguard.xyz')} and register your Agent's wallet address.`));
-        console.log(chalk.yellow('Step 2: Get your API Key'));
-        console.log(chalk.white(`After registration, navigate to 'API Access' to generate your Secret Key.`));
-        console.log(chalk.yellow('Step 3: Return here and select "Yes" to continue setup\n'));
+        console.log(chalk.yellow('Step 2: Get your Agent\'s Private Key'));
+        console.log(chalk.white(`Export the Private Key from the wallet you just registered. This key will be used by the SDK to sign transactions locally.`));
+        console.log(chalk.white(`${chalk.italic('Note: Your key is stored locally in your .env file and never leaves your machine.')}`));
+        console.log(chalk.yellow('Step 3: Return here and select "Yes" to configure your environment\n'));
 
         // Force restart to get keys
         const { restart } = await prompts({
@@ -124,7 +124,6 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
         if (restart) {
           process.exit(0); // Exit and let user rerun
         }
-        return; // Exit if they don't want to restart immediately
       }
 
       // --- CREDENTIAL CONFIGURATION ---
@@ -238,11 +237,11 @@ GEMINI_MODEL=gemini-2.0-flash
 
           console.log(chalk.yellow('📦 Installing dependencies...'));
           try {
-            execSync('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58', { stdio: 'inherit' });
+            execSync('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58 axios', { stdio: 'inherit' });
             console.log(chalk.green('\n✅ Dependencies installed.'));
           } catch (e) {
             console.log(chalk.gray('\nPlease run manual install:'));
-            console.log(chalk.white('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58'));
+            console.log(chalk.white('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58 axios'));
           }
 
           console.log(chalk.cyan('\nTo run your protected Agent:'));

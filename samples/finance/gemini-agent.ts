@@ -1,3 +1,4 @@
+import axios from 'axios';
 type GeminiRole = "user" | "model";
 
 type GeminiContent = {
@@ -72,34 +73,24 @@ export class GeminiAgent {
       },
     ];
 
-    const response = await fetch(
-      `${GEMINI_ENDPOINT}/${modelPath}:generateContent`,
+    const response = await axios.post(
+      `${GEMINI_ENDPOINT}/${modelPath}:generateContent?key=${this.apiKey}`,
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": this.apiKey,
+        systemInstruction: {
+          parts: [{ text: SYSTEM_INSTRUCTION }],
         },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: SYSTEM_INSTRUCTION }],
-          },
-          contents,
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json",
-          },
-        }),
+        contents,
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: "application/json",
+        },
+      },
+      {
+        headers: { "Content-Type": "application/json" },
       },
     );
 
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Gemini request failed (${response.status}): ${body}`);
-    }
-
-    const payload = await response.json();
-    const text = extractText(payload);
+    const text = extractText(response.data);
     const plan = parsePlan(text);
 
     this.history.push({
