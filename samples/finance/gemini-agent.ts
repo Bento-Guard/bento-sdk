@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { paint, color, sleep } from "./utils";
+
 type GeminiRole = "user" | "model";
 
 type GeminiContent = {
@@ -73,24 +75,47 @@ export class GeminiAgent {
       },
     ];
 
-    const response = await axios.post(
-      `${GEMINI_ENDPOINT}/${modelPath}:generateContent?key=${this.apiKey}`,
-      {
-        systemInstruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }],
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        },
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    let response;
+    let attempts = 0;
+    const maxAttempts = 2;
 
-    const text = extractText(response.data);
+    while (attempts < maxAttempts) {
+      try {
+        response = await axios.post(
+          `${GEMINI_ENDPOINT}/${modelPath}:generateContent`,
+          {
+            systemInstruction: {
+              parts: [{ text: SYSTEM_INSTRUCTION }],
+            },
+            contents,
+            generationConfig: {
+              temperature: 0.2,
+              responseMimeType: "application/json",
+            },
+          },
+          {
+            headers: { 
+              "Content-Type": "application/json",
+              "x-goog-api-key": this.apiKey
+            },
+          },
+        );
+        break; // Success!
+      } catch (error: any) {
+        attempts++;
+        if (error.response?.status === 429 && attempts < maxAttempts) {
+          console.log(paint("\n[RETRY] Gemini rate limit hit. Retrying in 3s...", color.yellow));
+          await sleep(3000);
+          continue;
+        }
+        if (error.response?.status === 429) {
+          throw new Error("Gemini API Rate Limit reached. Please wait a moment or use a paid API key.");
+        }
+        throw error;
+      }
+    }
+
+    const text = extractText(response!.data);
     const plan = parsePlan(text);
 
     this.history.push({
