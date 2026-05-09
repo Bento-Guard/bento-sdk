@@ -42,8 +42,8 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
   function printFooter() {
     console.log('\n' + chalk.gray('---------------------------------------------------------------------------------'));
     console.log(chalk.blue('🔗 Website: ') + chalk.underline('https://bentoguard.xyz/'));
-    console.log(chalk.blue('🐦 X (Twitter): ') + chalk.underline('https://x.com/bento_guard'));
-    console.log(chalk.blue('📖 Documentation: ') + chalk.underline('https://docs.bento.guard'));
+    console.log(chalk.blue('🐦 X (Twitter): ') + chalk.underline('https://x.com/Bento-Guard'));
+    console.log(chalk.blue('📖 Documentation: ') + chalk.underline('https://bento-1.gitbook.io/bento-docs'));
     console.log(chalk.white('\n✨ Bento Guard is ready! Your Agent is now protected.'));
     console.log(chalk.gray('---------------------------------------------------------------------------------\n'));
   }
@@ -98,7 +98,7 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
       const { hasRegistered } = await prompts({
         type: 'toggle',
         name: 'hasRegistered',
-        message: 'Have you registered your Agent on the Bento Guard Dashboard yet?',
+        message: 'Have you registered your Agent on the Bento Dashboard yet?',
         initial: true,
         active: 'Yes',
         inactive: 'Not yet'
@@ -115,141 +115,109 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
         console.log(chalk.white(`${chalk.italic('Note: Your key is stored locally in your .env file and never leaves your machine.')}\n`));
       }
 
-      // --- STEP 2: CREDENTIAL CONFIGURATION ---
-      console.log(chalk.white.bold('--- Environment Configuration ---'));
+      // --- STEP 2: INTEGRATION SCAFFOLDING ---
+      console.log(chalk.white.bold('--- Integration Scaffolding ---'));
+      const { generateExample } = await prompts({
+        type: 'toggle',
+        name: 'generateExample',
+        message: 'Create a sample finance agent (main.ts, gemini-agent.ts) in this directory?',
+        initial: true,
+        active: 'yes',
+        inactive: 'no'
+      });
+
+      let geminiKey = '';
+      if (generateExample) {
+        const geminiPrompt = await prompts({
+          type: 'password',
+          name: 'key',
+          message: '🤖 Enter Gemini API Key (optional, press enter to skip):',
+          initial: ''
+        });
+        geminiKey = geminiPrompt.key;
+      }
+
+      // --- STEP 3: CREDENTIAL CONFIGURATION ---
+      console.log(chalk.white.bold('\n--- Environment Configuration ---'));
       const { configNow } = await prompts({
         type: 'select',
         name: 'configNow',
-        message: 'Would you like us to help you configure your credentials?',
+        message: 'Configure your Agent Wallet Private Key now?',
         choices: [
-          { title: 'Yes, I have my Agent\'s Private Key ready', value: 'yes' },
-          { title: 'No, I will configure it manually later', value: 'no' }
+          { title: 'Yes, save to .env', value: 'yes' },
+          { title: 'No, I will do it later', value: 'no' }
         ],
         initial: 0
       });
 
       if (configNow === 'yes') {
-        const credentials = await prompts([
-          {
-            type: 'password',
-            name: 'walletKey',
-            message: '🔑 Enter Agent Wallet Private Key (Base58):',
-            validate: value => value.length > 0 || 'Private key is required'
-          },
-          {
-            type: 'password',
-            name: 'geminiKey',
-            message: '🤖 Enter Gemini API Key (optional, press enter to skip):',
-            initial: ''
-          }
-        ]);
+        const { walletKey } = await prompts({
+          type: 'password',
+          name: 'walletKey',
+          message: '🔑 Enter Agent Wallet Private Key (Base58):',
+          validate: value => value.length > 0 || 'Private key is required'
+        });
 
-        if (credentials.walletKey) {
+        if (walletKey) {
           const envPath = path.join(process.cwd(), '.env');
-          
-          // Append or create .env
           let envContent = '';
-          if (fs.existsSync(envPath)) {
-            envContent = fs.readFileSync(envPath, 'utf8');
-          }
+          if (fs.existsSync(envPath)) envContent = fs.readFileSync(envPath, 'utf8');
 
           const bentoEnv = `
 # Bento Guard Credentials
-AGENT_WALLET_PRIVATE_KEY=${credentials.walletKey}
+AGENT_WALLET_PRIVATE_KEY=${walletKey}
 BENTO_NETWORK=solana
-GEMINI_API_KEY=${credentials.geminiKey || 'your_gemini_api_key_here'}
+GEMINI_API_KEY=${geminiKey || 'your_gemini_api_key_here'}
 GEMINI_MODEL=gemini-2.0-flash
           `.trim();
 
           if (envContent.includes('AGENT_WALLET_PRIVATE_KEY')) {
-            envContent = envContent.replace(/AGENT_WALLET_PRIVATE_KEY=.*/, `AGENT_WALLET_PRIVATE_KEY=${credentials.walletKey}`);
-            if (credentials.geminiKey) {
-                if (envContent.includes('GEMINI_API_KEY')) {
-                    envContent = envContent.replace(/GEMINI_API_KEY=.*/, `GEMINI_API_KEY=${credentials.geminiKey}`);
-                } else {
-                    envContent += `\nGEMINI_API_KEY=${credentials.geminiKey}`;
-                }
+            envContent = envContent.replace(/AGENT_WALLET_PRIVATE_KEY=.*/, `AGENT_WALLET_PRIVATE_KEY=${walletKey}`);
+            if (geminiKey) {
+                envContent = envContent.includes('GEMINI_API_KEY') 
+                    ? envContent.replace(/GEMINI_API_KEY=.*/, `GEMINI_API_KEY=${geminiKey}`)
+                    : envContent + `\nGEMINI_API_KEY=${geminiKey}`;
             }
           } else {
             envContent += (envContent ? '\n\n' : '') + bentoEnv;
           }
 
           fs.writeFileSync(envPath, envContent);
-          console.log(chalk.green('\n✅ Credentials securely saved to .env'));
-          
-          // Store credentials for the sample generator
-          process.env.TEMP_WALLET_KEY = credentials.walletKey;
-          process.env.TEMP_GEMINI_KEY = credentials.geminiKey;
+          console.log(chalk.green('\n✅ Environment variables saved to .env'));
         }
-      } else {
-        console.log(chalk.gray('\nSkipping credential setup. You can re-run this with "npx bentoguard".'));
       }
 
-      // --- STEP 3: INTEGRATION SCAFFOLDING ---
-      console.log(chalk.white.bold('\n--- Integration Scaffolding ---'));
-      const { generateExample } = await prompts({
-        type: 'toggle',
-        name: 'generateExample',
-        message: 'Create a sample integration file (bento-demo.ts)?',
-        initial: true,
-        active: 'yes',
-        inactive: 'no'
-      });
-
+      // --- EXECUTE SCAFFOLDING ---
       if (generateExample) {
         const sampleSrcDir = path.join(__dirname, '..', 'samples', 'finance');
-        const sampleDestDir = path.join(process.cwd(), 'bento-sample');
+        const destDir = process.cwd();
 
         try {
-          if (!fs.existsSync(sampleDestDir)) {
-            fs.mkdirSync(sampleDestDir, { recursive: true });
-          }
-
-          // Copy all sample files
           const filesToCopy = fs.readdirSync(sampleSrcDir);
           filesToCopy.forEach(file => {
+            if (file === 'package.json' || file === '.env.example' || file === 'README.md') return; 
+            
             const src = path.join(sampleSrcDir, file);
-            const dest = path.join(sampleDestDir, file);
+            const dest = path.join(destDir, file);
+            
             if (fs.existsSync(src) && fs.statSync(src).isFile()) {
-              if (file === '.env.example') {
-                  // Create a real .env if we have the keys
-                  let envContent = fs.readFileSync(src, 'utf8');
-                  if (process.env.TEMP_WALLET_KEY) {
-                      envContent = envContent.replace('your_wallet_private_key_here', process.env.TEMP_WALLET_KEY);
-                  }
-                  if (process.env.TEMP_GEMINI_KEY) {
-                      envContent = envContent.replace('your_gemini_api_key_here', process.env.TEMP_GEMINI_KEY);
-                  }
-                  fs.writeFileSync(path.join(sampleDestDir, '.env'), envContent);
-              }
               fs.copyFileSync(src, dest);
             }
           });
 
-          // Create a package.json for the sample if it doesn't exist
-          const samplePkgPath = path.join(sampleDestDir, 'package.json');
-          const samplePkg = {
-              name: "bento-finance-sample",
-              version: "1.0.0",
-              description: "Bento Guard Finance Agent Sample",
-              scripts: {
-                  "start": "ts-node main.ts",
-                  "demo": "APP_MODE=DEMO ts-node main.ts"
-              },
-              dependencies: {
-                  "@bentoguard/sdk": "latest",
-                  "dotenv": "^16.4.5",
-                  "ts-node": "^10.9.2",
-                  "typescript": "^5.4.0"
-              }
-          };
-          fs.writeFileSync(samplePkgPath, JSON.stringify(samplePkg, null, 2));
+          console.log(chalk.green('\n✅ Sample files copied to current directory.'));
+          console.log(chalk.yellow('📦 Installing required dependencies...'));
+          
+          try {
+            execSync('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58', { stdio: 'inherit' });
+            console.log(chalk.green('\n✅ Dependencies installed.'));
+          } catch (e) {
+            console.log(chalk.gray('\nCould not run npm install automatically. Please run:'));
+            console.log(chalk.white('npm install dotenv @bentoguard/sdk ts-node typescript @solana/web3.js bs58'));
+          }
 
-          console.log(chalk.green('\n✅ Created "bento-sample" directory with full Finance Sandbox'));
-          console.log(chalk.cyan('\nTo start your Agent, run:'));
-          console.log(chalk.white(`  1. cd bento-sample`));
-          console.log(chalk.white(`  2. npm install`));
-          console.log(chalk.white(`  3. npm start`));
+          console.log(chalk.cyan('\nTo start your Agent:'));
+          console.log(chalk.white('  npx ts-node main.ts'));
         } catch (copyErr) {
           console.error(chalk.red('\nCould not copy sample files:'), copyErr.message);
         }

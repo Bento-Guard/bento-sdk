@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://bentoguard.xyz">
-    <img src="assets/BENTO_LOGO.png" alt="Bento Guard Logo" width="280">
+    <img src="./assets/BENTO_LOGO.png" alt="Bento Guard Logo" width="280">
   </a>
 </p>
 
