@@ -7,6 +7,7 @@ export enum BentoErrorCode {
   INVALID_CONFIG = 'INVALID_CONFIG',
   KEY_DERIVATION_FAILED = 'KEY_DERIVATION_FAILED',
   NOT_INITIALIZED = 'NOT_INITIALIZED',
+  ALREADY_FINALIZED = 'ALREADY_FINALIZED',
 }
 
 export class BentoError extends Error {
@@ -22,6 +23,15 @@ export class BentoError extends Error {
 
   public static fromError(error: any, defaultCode = BentoErrorCode.NETWORK_ERROR): BentoError {
     if (error instanceof BentoError) return error;
+
+    if (error.response?.status === 409) {
+      return new BentoError(BentoErrorCode.ALREADY_FINALIZED, error.response?.data?.message || 'Action already finalized');
+    }
+
+    if (error.response?.status === 401) {
+      return new BentoError(BentoErrorCode.UNAUTHORIZED, error.response?.data?.message || 'Unauthorized access');
+    }
+
     return new BentoError(defaultCode, error.message || 'An unknown error occurred', error);
   }
 }
