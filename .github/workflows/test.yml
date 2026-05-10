@@ -1,12 +1,12 @@
-name: Release to NPM
+name: CI - Test & Validate
 on:
   push:
-    branches: [master]
-    tags:
-      - 'v*'
+    branches: [develop]
+  pull_request:
+    branches: [develop, master]
 
 jobs:
-  publish:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,7 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24.15.0"
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: rm -f package-lock.json && npm install
@@ -24,7 +23,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish to NPM
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_CODE }}
+      - name: Run Tests
+        run: npm test
+
+      - name: Run Coverage
+        run: npm run test:coverage
+
+      - name: SDK Validation
+        run: npm run validate
