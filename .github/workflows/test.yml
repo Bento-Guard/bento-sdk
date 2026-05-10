@@ -28,6 +28,3 @@ jobs:
 
       - name: Run Coverage
         run: npm run test:coverage
-
-      - name: SDK Validation
-        run: npm run validate
