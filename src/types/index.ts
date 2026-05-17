@@ -10,6 +10,8 @@ export interface BentoGuardConfig {
 export interface BentoProtectOptions {
   timeout?: number;
   silent?: boolean;
+  pollIntervalMs?: number;
+  pollTimeoutMs?: number;
 }
 
 export interface EncryptedPayload {

@@ -41,16 +41,6 @@ export async function secureExecute(
   });
 }
 
-/**
- * Optional: Manual decision management via SDK
- */
-export async function submitManualDecision(
-  actionId: string,
-  decision: "ALLOW" | "BLOCKED",
-) {
-  const client = BentoClient.getInstance();
-  return await client.updateActionDecision(actionId, decision);
-}
 
 export async function pollActionStatus(actionId: string) {
   const client = BentoClient.getInstance();

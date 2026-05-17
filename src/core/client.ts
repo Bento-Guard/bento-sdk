@@ -102,8 +102,52 @@ export class BentoGuardClient {
       }
 
       if (result.recommendation === 'ESCALATED') {
-        // Log escalation but allow script to continue if manual review is required asynchronously
         console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
+
+        const actionId = result.actionId;
+        if (!actionId) {
+          throw new BentoError(
+            BentoErrorCode.NETWORK_ERROR,
+            'Escalated action is missing actionId for polling verification.'
+          );
+        }
+
+        const pollInterval = options?.pollIntervalMs ?? 2000;
+        const pollTimeout = options?.pollTimeoutMs ?? 300000; // 5 minutes default
+        const startTime = Date.now();
+
+        console.log(`[BENTO INFO] Pausing agent script to wait for Human-in-the-Loop decision on Action: ${actionId}...`);
+
+        while (Date.now() - startTime < pollTimeout) {
+          await new Promise((resolve) => setTimeout(resolve, pollInterval));
+
+          try {
+            const status = await this.getActionStatus(actionId);
+            if (status.final_decision === 'ALLOW') {
+              console.log(`[BENTO SUCCESS] Escalated action was APPROVED by the owner.`);
+              return {
+                ...result,
+                recommendation: 'ALLOW',
+                reasoning: `Approved by owner: ${status.reason || ''}`
+              };
+            } else if (status.final_decision === 'BLOCKED') {
+              throw new BentoError(
+                BentoErrorCode.HIGH_RISK_DETECTED,
+                `Action blocked by owner: ${status.reason || ''}`,
+                status
+              );
+            }
+            // If still ESCALATED, continue polling...
+          } catch (err: any) {
+            if (err instanceof BentoError) throw err;
+            console.warn(`[BENTO WARNING] Error during action status polling: ${err.message}`);
+          }
+        }
+
+        throw new BentoError(
+          BentoErrorCode.HIGH_RISK_DETECTED,
+          `Escalated action review timed out after ${pollTimeout / 1000}s waiting for owner approval.`
+        );
       }
 
       return result;
@@ -113,21 +157,6 @@ export class BentoGuardClient {
     }
   }
 
-  /**
-   * Manually approve or block an escalated action.
-   */
-  public async updateActionDecision(actionId: string, decision: 'ALLOW' | 'BLOCKED', reasoning?: string): Promise<any> {
-    const message = `Bento Guard Approval: ${actionId} - ${decision}`;
-    const signature = this.identity.signMessage(message, this.config.agentWalletPrivateKey);
-    const publicKey = this.identity.getPublicKey(this.config.agentWalletPrivateKey);
-
-    return this.api.updateActionDecision(actionId, {
-      decision,
-      reasoning,
-      signature,
-      publicKey
-    });
-  }
 
   /**
    * Check the current status of an action (useful for polling).
