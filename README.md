@@ -157,7 +157,13 @@ async function executeSecureAgentAction() {
     console.log("🛡️ Forwarding to Bento Guard Firewall...");
     
     // CALL THE GUARD: Intent + Raw Bytes
-    const audit = await protect(intent, rawTx);
+    const audit = await protect(intent, rawTx, {
+      // Default is true. Set to false if your app wants to return ESCALATED
+      // immediately and handle dashboard/deep-link approval itself.
+      autoPollEscalation: true,
+      pollIntervalMs: 2000,
+      pollTimeoutMs: 300000,
+    });
     
     if (audit.recommendation === 'ALLOW') {
       console.log("✅ Audit Passed:", audit.reasoning);
@@ -168,9 +174,15 @@ async function executeSecureAgentAction() {
       const signature = await connection.sendTransaction(transaction, [agentKeypair]);
       console.log("🚀 Secure Transaction Broadcasted:", signature);
       
-    } else if (audit.recommendation === 'ESCALATE') {
+    } else if (audit.recommendation === 'ESCALATED') {
       console.warn("⚠️ High-Risk Action: Pending human approval in Bento Dashboard.");
-      // The agent should wait or notify the user here.
+      console.warn("Action ID:", audit.actionId);
+      console.warn("Review URL:", audit.reviewUrl);
+      console.warn("Approve URL:", audit.approveUrl);
+      console.warn("Block URL:", audit.blockUrl);
+      // This branch is reached when autoPollEscalation is false.
+      // Keep the unsigned transaction in memory and only sign after
+      // getActionStatus(actionId) returns final_decision = ALLOW.
     }
     
   } catch (error: any) {
@@ -202,9 +214,25 @@ async function executeSecureAgentAction() {
 Not every risk is an attack. Sometimes an agent needs to perform a large, unusual transaction.
 Bento Guard's **Escalation Engine** allows:
 1. Agent submits a high-risk request.
-2. Bento Guard pauses the request and returns `ESCALATE`.
-3. An alert is sent to the developer/user via the **Bento Dashboard**.
-4. Once a human clicks "Approve", the SDK's next poll will receive an `ALLOW` decision.
+2. Bento Guard creates an action review and returns `ESCALATED` with an `actionId`.
+3. The backend sends dashboard notifications and deep links for approve/block.
+4. By default, the SDK pauses and polls until the owner approves or blocks the action.
+5. Once the owner approves, `protect()` resolves as `ALLOW`; if the owner blocks or review times out, `protect()` throws.
+
+If your application wants to handle review itself, pass:
+
+```typescript
+const audit = await protect(intent, rawTx, {
+  autoPollEscalation: false,
+});
+
+if (audit.recommendation === 'ESCALATED') {
+  console.log(audit.actionId);
+  console.log(audit.reviewUrl);
+  console.log(audit.approveUrl);
+  console.log(audit.blockUrl);
+}
+```
 
 ---
 

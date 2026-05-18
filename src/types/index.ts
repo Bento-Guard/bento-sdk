@@ -10,6 +10,7 @@ export interface BentoGuardConfig {
 export interface BentoProtectOptions {
   timeout?: number;
   silent?: boolean;
+  autoPollEscalation?: boolean;
   pollIntervalMs?: number;
   pollTimeoutMs?: number;
 }
@@ -25,6 +26,9 @@ export interface AnalysisResult {
   riskScore: number;
   reasoning: string;
   actionId?: string;
+  approveUrl?: string;
+  blockUrl?: string;
+  reviewUrl?: string;
   timestamp?: string;
   details?: {
     simulationStatus?: string;

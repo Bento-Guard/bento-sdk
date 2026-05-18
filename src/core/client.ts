@@ -104,6 +104,10 @@ export class BentoGuardClient {
       if (result.recommendation === 'ESCALATED') {
         console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
 
+        if (options?.autoPollEscalation === false) {
+          return result;
+        }
+
         const actionId = result.actionId;
         if (!actionId) {
           throw new BentoError(

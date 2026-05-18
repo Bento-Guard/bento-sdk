@@ -4,7 +4,6 @@ import { GeminiAgent, AgentPlan } from "./gemini-agent";
 import { SCENARIOS } from "./scenarios";
 import {
   secureExecute,
-  submitManualDecision,
   pollActionStatus,
 } from "./security-layer";
 import {
@@ -106,26 +105,15 @@ function printReasoning(
 }
 
 async function resolveEscalation(actionId: string) {
-  const mode = process.env.DEMO_MODE || "TERMINAL";
-
-  if (mode === "TERMINAL") {
-    const answer = await askQuestion(
-      `\n${paint("[HUMAN REVIEW]", color.bold, color.yellow)} Approve action ${paint(actionId, color.cyan)}? ${paint("(y/n)", color.bold)} `,
-    );
-    const finalDecision = answer.toLowerCase() === "y" ? "ALLOW" : "BLOCKED";
-    await submitManualDecision(actionId, finalDecision);
-    console.log(
-      `${paint("Manual decision submitted:", color.dim)} ${paint(
-        finalDecision,
-        finalDecision === "ALLOW" ? color.green : color.red,
-      )}`,
-    );
-    return;
-  }
-
   console.log("");
   label("Review mode", "Dashboard polling", color.yellow);
   label("Action ID", actionId, color.cyan);
+  console.log(
+    paint(
+      "Approve or block this action from the Bento dashboard or its deep link.",
+      color.dim,
+    ),
+  );
 
   let resolved = false;
   while (!resolved) {

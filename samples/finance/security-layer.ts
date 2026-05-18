@@ -38,6 +38,9 @@ export async function secureExecute(
   // We send instruction + raw unsigned transaction (Base64)
   return await protect(input.instruction, input.rawTransaction, {
     timeout: Number(process.env.BENTO_PROTECT_TIMEOUT_MS || 15000),
+    autoPollEscalation: process.env.BENTO_AUTO_POLL_ESCALATION !== "false",
+    pollIntervalMs: Number(process.env.BENTO_POLL_INTERVAL_MS || 2000),
+    pollTimeoutMs: Number(process.env.BENTO_POLL_TIMEOUT_MS || 300000),
   });
 }
 
