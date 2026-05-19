@@ -23,6 +23,10 @@ export class ApiClient {
     });
   }
 
+  public setAuthToken(token: string): void {
+    this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+
   public async getSystemPublicKey(): Promise<string> {
     try {
       const response = await this.axiosInstance.get('/api/v1/system/public-key');
@@ -71,6 +75,130 @@ export class ApiClient {
   public async getActionStatus(actionId: string): Promise<any> {
     try {
       const response = await this.axiosInstance.get(`/api/v1/actions/${actionId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // On-Chain Onboarding / Agent Registration
+  // ──────────────────────────────────────────────────────────────────
+
+  public async buildRegistration(payload: {
+    agent_public_addr: string;
+    spend_limit: number;
+  }): Promise<{ transaction: string; agent_pda: string }> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/agents/onchain/build', payload);
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
+  public async confirmRegistration(payload: {
+    agent_public_addr: string;
+    spend_limit: number;
+    name_agent: string;
+    icon_agent: string;
+    signed_transaction: string;
+  }): Promise<any> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/agents/onchain/confirm', payload);
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // On-Chain Protected Action Workflow
+  // ──────────────────────────────────────────────────────────────────
+
+  public async buildInitAction(payload: {
+    agent_public_addr: string;
+    owner_pubkey: string;
+    action_id: string;
+    target_program: string;
+    value: string;
+    total_data_len: number;
+  }): Promise<{ transaction: string; action_pda: string }> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/actions/onchain/build-init', payload);
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
+  public async confirmInitAction(payload: {
+    agent_public_addr: string;
+    owner_pubkey: string;
+    action_id: string;
+    target_program: string;
+    value: string;
+    total_data_len: number;
+    signed_transaction: string;
+  }): Promise<any> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/actions/onchain/init', payload);
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
+  public async buildAppendPayload(payload: {
+    agent_public_addr: string;
+    action_id: string;
+    offset: number;
+    chunk: string; // base64
+  }): Promise<{ transaction: string }> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/actions/onchain/build-append', payload);
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
+  public async confirmAppendPayload(payload: {
+    agent_public_addr: string;
+    action_id: string;
+    offset: number;
+    chunk_len: number;
+    signed_transaction: string;
+  }): Promise<any> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/actions/onchain/append-payload', payload);
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
+  public async buildFinalizeAction(payload: {
+    agent_public_addr: string;
+    action_id: string;
+    commitment_hash: number[];
+  }): Promise<{ transaction: string }> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/actions/onchain/build-finalize', payload);
+      return response.data.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
+  public async confirmFinalizeAction(payload: {
+    agent_public_addr: string;
+    action_id: string;
+    signed_transaction: string;
+    trigger_verdict?: boolean;
+  }): Promise<any> {
+    try {
+      const response = await this.axiosInstance.post('/api/v1/actions/onchain/finalize', payload);
       return response.data.data;
     } catch (error: any) {
       throw BentoError.fromError(error);

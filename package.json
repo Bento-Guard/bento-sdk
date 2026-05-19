@@ -20,6 +20,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "validate": "ts-node scratch/validate_sdk.ts",
+    "demo:onchain": "ts-node bento-onchain-demo.ts",
     "lint": "eslint 'src/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts'",
     "prepare": "npm run build",
@@ -38,6 +39,10 @@
   "author": "Bento Team",
   "license": "MIT",
   "dependencies": {
+    "@coral-xyz/borsh": "^0.32.1",
+    "@noble/ciphers": "^1.0.0",
+    "@noble/curves": "^1.9.7",
+    "@noble/hashes": "^1.4.0",
     "@solana/web3.js": "^1.91.0",
     "axios": "^1.7.0",
     "bs58": "^6.0.0",
