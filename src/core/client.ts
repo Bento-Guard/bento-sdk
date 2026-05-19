@@ -359,7 +359,14 @@ export class BentoGuardClient {
         console.warn(`[BENTO WARNING] Action escalated for review: ${verdict.reasoning}`);
 
         if (params.autoPollEscalation === false) {
-          return { recommendation: 'ESCALATED', actionId, reasoning: verdict.reasoning };
+          return {
+            recommendation: 'ESCALATED',
+            actionId,
+            reasoning: verdict.reasoning,
+            approveUrl: verdict.approveUrl,
+            blockUrl: verdict.blockUrl,
+            reviewUrl: verdict.reviewUrl,
+          };
         }
 
         const pollInterval = params.pollIntervalMs ?? 2000;
@@ -454,5 +461,12 @@ export class BentoGuardClient {
    */
   public async getActionStatus(actionId: string): Promise<any> {
     return this.api.getActionStatus(actionId);
+  }
+
+  /**
+   * Get direct access to the ApiClient
+   */
+  public getApiClient(): ApiClient {
+    return this.api;
   }
 }
