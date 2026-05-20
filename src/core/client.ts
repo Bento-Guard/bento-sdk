@@ -273,8 +273,8 @@ export class BentoGuardClient {
       });
 
       const initTx = VersionedTransaction.deserialize(Buffer.from(initRes.transaction, 'base64'));
-      // Sign with both owner and agent keypairs
-      initTx.sign([params.ownerKeypair, agentKeypair]);
+      // Sign with agent keypair
+      initTx.sign([agentKeypair]);
 
       await this.api.confirmInitAction({
         agent_public_addr: agentKeypair.publicKey.toBase58(),
@@ -306,8 +306,8 @@ export class BentoGuardClient {
         });
 
         const appendTx = VersionedTransaction.deserialize(Buffer.from(appendRes.transaction, 'base64'));
-        // Only owner signer required for appending chunks once delegated
-        appendTx.sign([params.ownerKeypair]);
+        // Only agent signer required for appending chunks once delegated
+        appendTx.sign([agentKeypair]);
 
         await this.api.confirmAppendPayload({
           agent_public_addr: agentKeypair.publicKey.toBase58(),
@@ -331,7 +331,7 @@ export class BentoGuardClient {
       });
 
       const finalizeTx = VersionedTransaction.deserialize(Buffer.from(finalizeRes.transaction, 'base64'));
-      finalizeTx.sign([params.ownerKeypair]);
+      finalizeTx.sign([agentKeypair]);
 
       const finalizeConfirm = await this.api.confirmFinalizeAction({
         agent_public_addr: agentKeypair.publicKey.toBase58(),
