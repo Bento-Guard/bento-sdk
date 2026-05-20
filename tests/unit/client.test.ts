@@ -1,11 +1,23 @@
 import { BentoGuardClient } from '../../src/core/client';
-import { BentoError } from '../../src/errors/bento-error';
+import { ApiClient } from '../../src/api/client';
+import { BentoError, BentoErrorCode } from '../../src/errors/bento-error';
 
-describe('BentoGuardClient Singleton', () => {
+jest.mock('../../src/api/client');
+
+describe('BentoGuardClient', () => {
+  let mockApiClientInstance: any;
+
   beforeEach(() => {
     // Hack to clear the singleton instance for testing
     // @ts-ignore
     BentoGuardClient.instance = undefined;
+    jest.clearAllMocks();
+
+    mockApiClientInstance = {
+      postTransaction: jest.fn(),
+      getActionStatus: jest.fn(),
+    };
+    (ApiClient as jest.Mock).mockImplementation(() => mockApiClientInstance);
   });
 
   it('should throw error when getting instance before initialization', () => {
@@ -15,7 +27,8 @@ describe('BentoGuardClient Singleton', () => {
 
   it('should return the same instance when initialized multiple times', () => {
     const config = {
-      agentWalletPrivateKey: 'test-wallet',
+      agentWalletPrivateKey: '5PrL111111111111111111111111111111111111111111111111111111111111',
+      agentAddress: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
     };
 
     const instance1 = BentoGuardClient.initialize(config);
@@ -26,67 +39,84 @@ describe('BentoGuardClient Singleton', () => {
     expect(instance2).toBe(instance3);
   });
 
-  it('should expose getApiClient', () => {
+  it('should successfully execute protect and return ALLOW decision', async () => {
     const config = {
-      agentWalletPrivateKey: require('@solana/web3.js').Keypair.generate().secretKey.join(','),
+      agentAddress: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
     };
     const client = BentoGuardClient.initialize(config);
-    expect(client.getApiClient()).toBeDefined();
+
+    mockApiClientInstance.postTransaction.mockResolvedValue({
+      recommendation: 'ALLOW',
+      riskScore: 5,
+      reasoning: 'Instruction is perfectly safe.',
+    });
+
+    const result = await client.protect('send 100 sol to some address', 'mock-signature');
+
+    expect(result.recommendation).toBe('ALLOW');
+    expect(result.riskScore).toBe(5);
+    expect(mockApiClientInstance.postTransaction).toHaveBeenCalledWith(
+      {
+        agent_address: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
+        wallet_address: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
+        encrypted_payload: 'send 100 sol to some address',
+        signature: 'mock-signature',
+        base64_tx: 'tx',
+        network: 'solana',
+      },
+      undefined
+    );
   });
 
-  it('should propagate review deeplinks in protectOnChain when escalated', async () => {
-    const testAgent = require('@solana/web3.js').Keypair.generate();
+  it('should throw BentoError when protect returns BLOCKED recommendation', async () => {
     const config = {
-      agentWalletPrivateKey: testAgent.secretKey.join(','),
+      agentAddress: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
     };
     const client = BentoGuardClient.initialize(config);
-    const api = client.getApiClient();
 
-    const owner = require('@solana/web3.js').Keypair.generate();
-    
-    // Mock buildInitAction and confirmInitAction
-    jest.spyOn(api, 'buildInitAction').mockResolvedValue({ transaction: 'mock-tx', action_pda: 'mock-pda' });
-    jest.spyOn(api, 'confirmInitAction').mockResolvedValue({ success: true });
-    
-    // Mock buildAppendPayload and confirmAppendPayload
-    jest.spyOn(api, 'buildAppendPayload').mockResolvedValue({ transaction: 'mock-tx' });
-    jest.spyOn(api, 'confirmAppendPayload').mockResolvedValue({ success: true });
-    
-    // Mock finalize which returns the escalated verdict with links
-    jest.spyOn(api, 'buildFinalizeAction').mockResolvedValue({ transaction: 'mock-tx' });
-    jest.spyOn(api, 'confirmFinalizeAction').mockResolvedValue({
-      success: true,
-      verdict: {
-        decision: 'Escalated',
-        raw_score: 50000,
-        reasoning: 'Manual check',
-        approveUrl: 'http://approve-link',
-        blockUrl: 'http://block-link',
-        reviewUrl: 'http://review-link',
-      }
+    mockApiClientInstance.postTransaction.mockResolvedValue({
+      recommendation: 'BLOCKED',
+      riskScore: 95,
+      reasoning: 'Malicious system command or sweep detected.',
     });
 
-    const mockTxInstance = {
-      sign: jest.fn(),
-      serialize: jest.fn().mockReturnValue(Buffer.from('signed-bytes')),
+    await expect(
+      client.protect('send 100 sol to some address', 'mock-signature')
+    ).rejects.toThrow(BentoError);
+
+    try {
+      await client.protect('send 100 sol to some address', 'mock-signature');
+    } catch (err: any) {
+      expect(err.code).toBe(BentoErrorCode.HIGH_RISK_DETECTED);
+      expect(err.message).toContain('Action blocked');
+    }
+  });
+
+  it('should handle ESCALATED recommendation and poll for APPROVAL', async () => {
+    const config = {
+      agentAddress: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
     };
-    const { VersionedTransaction } = require('@solana/web3.js');
-    jest.spyOn(VersionedTransaction, 'deserialize').mockReturnValue(mockTxInstance);
+    const client = BentoGuardClient.initialize(config);
 
-    const result = await client.protectOnChain('Do a transaction', 'mock-tx-base64', {
-      ownerKeypair: owner,
-      relayerPublicKey: owner.publicKey.toBase58(),
-      targetProgram: owner.publicKey.toBase58(),
-      autoPollEscalation: false,
-    });
-
-    expect(result).toEqual({
+    mockApiClientInstance.postTransaction.mockResolvedValue({
       recommendation: 'ESCALATED',
-      actionId: expect.any(String),
-      reasoning: 'Manual check',
-      approveUrl: 'http://approve-link',
-      blockUrl: 'http://block-link',
-      reviewUrl: 'http://review-link',
+      riskScore: 50,
+      reasoning: 'Requires manual review.',
+      actionId: 'action-123',
     });
+
+    // First call returns ESCALATED, second call returns ALLOW
+    mockApiClientInstance.getActionStatus
+      .mockResolvedValueOnce({ final_decision: 'ESCALATED' })
+      .mockResolvedValueOnce({ final_decision: 'ALLOW', reason: 'Approved by owner manually.' });
+
+    const result = await client.protect('send 100 sol to some address', 'mock-signature', {
+      pollIntervalMs: 10,
+      pollTimeoutMs: 1000,
+    });
+
+    expect(result.recommendation).toBe('ALLOW');
+    expect(result.reasoning).toContain('Approved by owner');
+    expect(mockApiClientInstance.getActionStatus).toHaveBeenCalledTimes(2);
   });
 });

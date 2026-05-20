@@ -1,37 +1,10 @@
-import * as borsh from '@coral-xyz/borsh';
 import { x25519 } from '@noble/curves/ed25519';
 import { chacha20poly1305 } from '@noble/ciphers/chacha';
+import { randomBytes } from '@noble/ciphers/webcrypto';
 import { blake3 } from '@noble/hashes/blake3';
-import { randomBytes as nodeRandomBytes } from 'node:crypto';
 
 export const X25519_KEY_LENGTH = 32;
 export const NONCE_LENGTH = 12;
-
-export interface ActionPayload {
-  prompt: string;
-  tx: Uint8Array;
-}
-
-const LAYOUT = borsh.struct<{ prompt: string; tx: Buffer }>([
-  borsh.str('prompt'),
-  borsh.vecU8('tx'),
-]);
-
-const getRandomBytes = (len: number): Uint8Array => {
-  if (typeof window !== 'undefined' && window.crypto) {
-    return window.crypto.getRandomValues(new Uint8Array(len));
-  }
-  return new Uint8Array(nodeRandomBytes(len));
-};
-
-export const encodeActionPayload = (input: ActionPayload): Uint8Array => {
-  const tx = Buffer.from(input.tx);
-  const buf = Buffer.alloc(
-    4 + Buffer.byteLength(input.prompt, 'utf8') + 4 + tx.length,
-  );
-  const written = LAYOUT.encode({ prompt: input.prompt, tx }, buf);
-  return new Uint8Array(buf.slice(0, written));
-};
 
 export interface EncryptForRelayerParams {
   plaintext: Uint8Array;
@@ -65,7 +38,7 @@ export const encryptForRelayer = (
     params.relayerPublicKey,
   );
 
-  const nonce = params.nonce ?? getRandomBytes(NONCE_LENGTH);
+  const nonce = params.nonce ?? randomBytes(NONCE_LENGTH);
   if (nonce.length !== NONCE_LENGTH) {
     throw new Error(`nonce must be ${NONCE_LENGTH} bytes, got ${nonce.length}`);
   }
@@ -83,6 +56,9 @@ export const encryptForRelayer = (
 
   return { ciphertext, ephemeralPublicKey, nonce, payload };
 };
+
+export const commitmentHash = (plaintext: Uint8Array): Uint8Array =>
+  blake3(plaintext);
 
 export const commitmentHashAsArray = (plaintext: Uint8Array): number[] =>
   Array.from(blake3(plaintext));

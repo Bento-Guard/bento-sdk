@@ -107,57 +107,36 @@ npx @bentoguard/sdk
 
 ## 💻 Implementation Manual (Production Pattern)
 
-To ensure 100% reliability, your agent should follow this integration pattern. This ensures the transaction is audited *before* the private key is ever used to sign.
+To ensure 100% reliability, your agent should follow this integration pattern. This ensures the instruction is audited and approved *before* any transactions are built or broadcasted.
 
 ```typescript
-import { BentoClient, protect } from '@bentoguard/sdk';
-import { Connection, Transaction, SystemProgram, PublicKey, Keypair } from '@solana/web3.js';
+import { protect } from '@bentoguard/sdk';
+import { Keypair } from '@solana/web3.js';
+import * as nacl from 'tweetnacl';
 import bs58 from 'bs58';
 
 /**
  * PRODUCTION-GRADE INTEGRATION
  */
 async function executeSecureAgentAction() {
-  const connection = new Connection("https://api.mainnet-beta.solana.com");
-  
   // Load Agent's identity
   const agentKeypair = Keypair.fromSecretKey(bs58.decode(process.env.AGENT_WALLET_PRIVATE_KEY!));
 
-  // 1. Initialize Bento Client
-  // This establishes the secure handshake with the Bento Security Engine
-  if (!BentoClient.isInitialized()) {
-    BentoClient.initialize({
-      agentWalletPrivateKey: process.env.AGENT_WALLET_PRIVATE_KEY!,
-      network: 'solana'
-    });
-  }
-
-  // 2. AGENT PLANNING PHASE
-  const intent = "Swap 5.0 SOL for USDC on Jupiter";
+  // 1. AGENT PLANNING PHASE
+  const instruction = "Send 10 SOL to recipient address 2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG";
   
-  // 3. TRANSACTION BUILDING PHASE
-  // Create the transaction but DO NOT SIGN yet.
-  const transaction = new Transaction().add(
-    // ... your agent's logic to build the tx ...
-  );
-  
-  // Vital: Simulation requires a recent blockhash and fee payer
-  const { blockhash } = await connection.getLatestBlockhash();
-  transaction.recentBlockhash = blockhash;
-  transaction.feePayer = agentKeypair.publicKey;
-
-  // 4. PRE-EXECUTION GUARD PHASE
-  // Serialize the unsigned transaction to Base64
-  const rawTx = transaction.serialize({ 
-    requireAllSignatures: false, 
-    verifySignatures: false 
-  }).toString('base64');
+  // 2. SIGNING THE INSTRUCTION
+  // Generate the Ed25519 signature of the instruction using the Agent's private key
+  const messageBytes = new TextEncoder().encode(instruction);
+  const signatureBytes = nacl.sign.detached(messageBytes, agentKeypair.secretKey);
+  const signature = bs58.encode(signatureBytes);
 
   try {
     console.log("🛡️ Forwarding to Bento Guard Firewall...");
     
-    // CALL THE GUARD: Intent + Raw Bytes
-    const audit = await protect(intent, rawTx, {
+    // 3. CALL THE GUARD: Instruction + Signature
+    const audit = await protect(instruction, signature, {
+      agentAddress: agentKeypair.publicKey.toBase58(),
       // Default is true. Set to false if your app wants to return ESCALATED
       // immediately and handle dashboard/deep-link approval itself.
       autoPollEscalation: true,
@@ -169,10 +148,9 @@ async function executeSecureAgentAction() {
       console.log("✅ Audit Passed:", audit.reasoning);
       console.log("Risk Score:", audit.riskScore);
       
-      // 5. SIGNING & BROADCAST PHASE
-      // Only now is it safe to use the private key
-      const signature = await connection.sendTransaction(transaction, [agentKeypair]);
-      console.log("🚀 Secure Transaction Broadcasted:", signature);
+      // 4. SIGNING & BROADCAST PHASE
+      // Safe to build and broadcast your transaction now
+      console.log("🚀 Executing secure transaction...");
       
     } else if (audit.recommendation === 'ESCALATED') {
       console.warn("⚠️ High-Risk Action: Pending human approval in Bento Dashboard.");
@@ -181,7 +159,7 @@ async function executeSecureAgentAction() {
       console.warn("Approve URL:", audit.approveUrl);
       console.warn("Block URL:", audit.blockUrl);
       // This branch is reached when autoPollEscalation is false.
-      // Keep the unsigned transaction in memory and only sign after
+      // Keep the execution paused and only proceed after
       // getActionStatus(actionId) returns final_decision = ALLOW.
     }
     
@@ -203,7 +181,7 @@ async function executeSecureAgentAction() {
 | Feature | Technical Detail |
 |:--- |:--- |
 | **LLM Cross-Verification** | We use multiple models (Gemini/Claude) to reach a consensus on agent intent. |
-| **State-Fork Simulation** | MagicBlock forks the mainnet state at the exact slot of the request for 100% accuracy. |
+| **Pre-Execution Simulation** | MagicBlock forks the mainnet state at the exact slot of the request for 100% accuracy. |
 | **Dynamic On-chain Policies** | Policies are stored in Solana accounts, allowing for real-time updates and DAO governance. |
 | **Identity Verification** | Every audit request is cryptographically tied to the Agent's on-chain public address. |
 
@@ -222,7 +200,8 @@ Bento Guard's **Escalation Engine** allows:
 If your application wants to handle review itself, pass:
 
 ```typescript
-const audit = await protect(intent, rawTx, {
+const audit = await protect(instruction, signature, {
+  agentAddress: agentKeypair.publicKey.toBase58(),
   autoPollEscalation: false,
 });
 

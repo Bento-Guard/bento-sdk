@@ -1,7 +1,6 @@
 import { BentoGuardClient } from '../../src/core/client';
 import { ApiClient } from '../../src/api/client';
 import { BentoError } from '../../src/errors/bento-error';
-import { generateKeyPairSync } from 'node:crypto';
 import * as nacl from 'tweetnacl';
 import bs58 from 'bs58';
 
@@ -41,7 +40,7 @@ describe('BentoGuardClient protect() E2E', () => {
       timestamp: new Date().toISOString()
     });
 
-    await expect(client.protect('Transfer 1000 SOL', 'base64txdata')).rejects.toThrow(BentoError);
-    await expect(client.protect('Transfer 1000 SOL', 'base64txdata')).rejects.toThrow('Action blocked: Simulated block reasoning');
+    await expect(client.protect('Transfer 1000 SOL', 'mock-signature')).rejects.toThrow(BentoError);
+    await expect(client.protect('Transfer 1000 SOL', 'mock-signature')).rejects.toThrow('Action blocked: Simulated block reasoning');
   });
 });
