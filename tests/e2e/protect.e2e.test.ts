@@ -39,6 +39,12 @@ describe('BentoGuardClient protect() E2E', () => {
       reasoning: 'Simulated block reasoning',
       timestamp: new Date().toISOString()
     });
+    // @ts-ignore
+    client.api.getOnchainConfig.mockResolvedValue({
+      relayer_encryption_key: Array.from(nacl.box.keyPair().publicKey),
+    });
+    // @ts-ignore
+    client.api.getRelayerInfo.mockResolvedValue({});
 
     await expect(client.protect('Transfer 1000 SOL', 'mock-signature')).rejects.toThrow(BentoError);
     await expect(client.protect('Transfer 1000 SOL', 'mock-signature')).rejects.toThrow('Action blocked: Simulated block reasoning');

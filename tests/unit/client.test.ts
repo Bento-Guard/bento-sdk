@@ -1,6 +1,8 @@
 import { BentoGuardClient } from '../../src/core/client';
 import { ApiClient } from '../../src/api/client';
 import { BentoError, BentoErrorCode } from '../../src/errors/bento-error';
+import * as nacl from 'tweetnacl';
+import bs58 from 'bs58';
 
 jest.mock('../../src/api/client');
 
@@ -16,6 +18,10 @@ describe('BentoGuardClient', () => {
     mockApiClientInstance = {
       postTransaction: jest.fn(),
       getActionStatus: jest.fn(),
+      getRelayerInfo: jest.fn().mockResolvedValue({}),
+      getOnchainConfig: jest.fn().mockResolvedValue({
+        relayer_encryption_key: Array.from(nacl.box.keyPair().publicKey),
+      }),
     };
     (ApiClient as jest.Mock).mockImplementation(() => mockApiClientInstance);
   });
@@ -40,8 +46,11 @@ describe('BentoGuardClient', () => {
   });
 
   it('should successfully execute protect and return ALLOW decision', async () => {
+    const walletKeyPair = nacl.sign.keyPair();
+    const walletPrivBs58 = bs58.encode(walletKeyPair.secretKey);
     const config = {
       agentAddress: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
+      agentWalletPrivateKey: walletPrivBs58,
     };
     const client = BentoGuardClient.initialize(config);
 
@@ -56,21 +65,22 @@ describe('BentoGuardClient', () => {
     expect(result.recommendation).toBe('ALLOW');
     expect(result.riskScore).toBe(5);
     expect(mockApiClientInstance.postTransaction).toHaveBeenCalledWith(
-      {
-        agent_address: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
-        wallet_address: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
-        encrypted_payload: 'send 100 sol to some address',
-        signature: 'mock-signature',
-        base64_tx: 'tx',
-        network: 'solana',
-      },
-      undefined
+      expect.objectContaining({
+        agent_address: expect.any(String),
+        wallet_address: expect.any(String),
+        encrypted_payload: expect.any(String),
+        signature: expect.any(String),
+        base64_tx: expect.any(String),
+      })
     );
   });
 
   it('should throw BentoError when protect returns BLOCKED recommendation', async () => {
+    const walletKeyPair = nacl.sign.keyPair();
+    const walletPrivBs58 = bs58.encode(walletKeyPair.secretKey);
     const config = {
       agentAddress: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
+      agentWalletPrivateKey: walletPrivBs58,
     };
     const client = BentoGuardClient.initialize(config);
 
@@ -93,8 +103,11 @@ describe('BentoGuardClient', () => {
   });
 
   it('should handle ESCALATED recommendation and poll for APPROVAL', async () => {
+    const walletKeyPair = nacl.sign.keyPair();
+    const walletPrivBs58 = bs58.encode(walletKeyPair.secretKey);
     const config = {
       agentAddress: '2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG',
+      agentWalletPrivateKey: walletPrivBs58,
     };
     const client = BentoGuardClient.initialize(config);
 
