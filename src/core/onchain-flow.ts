@@ -80,101 +80,74 @@ export async function onchainProtect(
       signed_transaction: signedInitTxBase64,
     });
 
-    const actionPdaStr = initActionRes.action_pda;
-    if (!actionPdaStr) {
-      throw new BentoError(
-        BentoErrorCode.NETWORK_ERROR,
-        'Failed to retrieve action PDA from backend initialization.'
-      );
-    }
-    const actionPda = new PublicKey(actionPdaStr);
-    const magicblockRpcUrl = process.env.MAGICBLOCK_RPC_URL || 'https://devnet.magicblock.app';
-    console.log(`⏳ Dynamic polling Magicblock ER (${magicblockRpcUrl}) for Action PDA ${actionPdaStr} synchronization...`);
-    
-    const connection = new Connection(magicblockRpcUrl, 'confirmed');
-    let accountExists = false;
-    const maxRetries = 40;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const accountInfo = await connection.getAccountInfo(actionPda);
-        if (accountInfo) {
-          console.log(`✅ Action PDA account synchronized on Magicblock ER! (Attempt ${attempt})`);
-          accountExists = true;
-          break;
-        }
-      } catch (err: any) {
-        console.warn(`[BENTO] Polling attempt ${attempt} failed: ${err.message}`);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    // (Optional logging or parsing of actionPdaStr can remain if needed)
 
-    if (!accountExists) {
-      throw new BentoError(
-        BentoErrorCode.NETWORK_ERROR,
-        `Magicblock ER failed to synchronize the delegated Action account ${actionPdaStr} within timeout.`
-      );
-    }
-
-    // 5. Append encrypted payload chunks (Co-signing sequential loop)
-    console.log('📦 Appending encrypted payload chunks to Magicblock ER...');
+    // 5. Append encrypted payload chunks and Finalize
+    console.log('📦 Appending encrypted payload chunks and finalizing on Magicblock ER...');
     const payloadBuffer = Buffer.from(encrypted.payload);
     const CHUNK_SIZE = 900;
     let offset = 0;
+    
+    let finalizeRes: any = null;
 
     while (offset < payloadBuffer.length) {
       const chunkSlice = payloadBuffer.subarray(offset, offset + CHUNK_SIZE);
       const chunkBase64 = Buffer.from(chunkSlice).toString('base64');
       const chunkLen = chunkSlice.length;
+      const isLastChunk = (offset + chunkLen >= payloadBuffer.length);
 
-      console.log(`   * Appending chunk at offset ${offset} (${chunkLen} bytes)...`);
+      console.log(`   * Appending chunk at offset ${offset} (${chunkLen} bytes)...${isLastChunk ? ' (LAST CHUNK + FINALIZE)' : ''}`);
 
-      // Build append transaction with Relayer signature
-      const buildAppendRes = await client.api.buildAppend({
-        agent_public_addr: agentAddress,
-        action_id: actionId,
-        offset,
-        chunk: chunkBase64,
-      });
+      if (!isLastChunk) {
+        // Build append transaction
+        const buildAppendRes = await client.api.buildAppend({
+          agent_public_addr: agentAddress,
+          action_id: actionId,
+          offset,
+          chunk: chunkBase64,
+        });
 
-      const appendTxBytes = Buffer.from(buildAppendRes.transaction, 'base64');
-      const appendVtx = VersionedTransaction.deserialize(appendTxBytes);
-      appendVtx.sign([agentKeypair]); // Co-sign offline with Agent's private key
+        const appendTxBytes = Buffer.from(buildAppendRes.transaction, 'base64');
+        const appendVtx = VersionedTransaction.deserialize(appendTxBytes);
+        appendVtx.sign([agentKeypair]);
 
-      const signedAppendTxBase64 = Buffer.from(appendVtx.serialize()).toString('base64');
+        const signedAppendTxBase64 = Buffer.from(appendVtx.serialize()).toString('base64');
 
-      // Submit the signed append transaction
-      await client.api.appendPayload({
-        agent_public_addr: agentAddress,
-        action_id: actionId,
-        offset,
-        chunk_len: chunkLen,
-        signed_transaction: signedAppendTxBase64,
-      });
+        await client.api.appendPayload({
+          agent_public_addr: agentAddress,
+          action_id: actionId,
+          offset,
+          chunk_len: chunkLen,
+          signed_transaction: signedAppendTxBase64,
+        });
+      } else {
+        // Build append-and-finalize transaction
+        const buildAppFinRes = await client.api.buildAppendAndFinalize({
+          agent_public_addr: agentAddress,
+          action_id: actionId,
+          offset,
+          chunk: chunkBase64,
+          commitment_hash: Array.from(commitmentHash),
+        });
+
+        const appFinTxBytes = Buffer.from(buildAppFinRes.transaction, 'base64');
+        const appFinVtx = VersionedTransaction.deserialize(appFinTxBytes);
+        appFinVtx.sign([agentKeypair]);
+
+        const signedAppFinTxBase64 = Buffer.from(appFinVtx.serialize()).toString('base64');
+
+        finalizeRes = await client.api.appendAndFinalize({
+          agent_public_addr: agentAddress,
+          action_id: actionId,
+          offset,
+          chunk_len: chunkLen,
+          signed_transaction: signedAppFinTxBase64,
+          trigger_verdict: true,
+        });
+      }
 
       offset += chunkLen;
     }
-
-    // 6. Finalize Action Building (Co-signing)
-    console.log('🏁 Finalizing Action Building on Magicblock ER and triggering AI analysis...');
-    const buildFinalizeRes = await client.api.buildFinalize({
-      agent_public_addr: agentAddress,
-      action_id: actionId,
-      commitment_hash: commitmentHash,
-    });
-
-    const finalizeTxBytes = Buffer.from(buildFinalizeRes.transaction, 'base64');
-    const finalizeVtx = VersionedTransaction.deserialize(finalizeTxBytes);
-    finalizeVtx.sign([agentKeypair]); // Co-sign offline with Agent's private key
-
-    const signedFinalizeTxBase64 = Buffer.from(finalizeVtx.serialize()).toString('base64');
-
-    // Submit signed finalize transaction and get AI Analysis & Verdict
-    const finalizeRes = await client.api.finalizeAction({
-      agent_public_addr: agentAddress,
-      action_id: actionId,
-      signed_transaction: signedFinalizeTxBase64,
-      trigger_verdict: true,
-    });
 
     // 7. Get final verdict details directly
     const verdict = finalizeRes.verdict;

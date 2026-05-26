@@ -116,22 +116,23 @@ export class ApiClient {
     }
   }
 
-  public async buildFinalize(data: any): Promise<any> {
+  public async buildAppendAndFinalize(data: any): Promise<any> {
     try {
-      const response = await this.axiosInstance.post('/api/v1/actions/onchain/build-finalize', data);
+      const response = await this.axiosInstance.post('/api/v1/actions/onchain/build-append-and-finalize', data);
       return response.data?.data ?? response.data;
     } catch (error: any) {
       throw BentoError.fromError(error);
     }
   }
 
-  public async finalizeAction(data: any): Promise<any> {
+  public async appendAndFinalize(data: any): Promise<any> {
     try {
-      const response = await this.axiosInstance.post('/api/v1/actions/onchain/finalize', data);
+      const response = await this.axiosInstance.post('/api/v1/actions/onchain/append-and-finalize', data);
       return response.data?.data ?? response.data;
     } catch (error: any) {
       throw BentoError.fromError(error);
     }
   }
+
 }
 

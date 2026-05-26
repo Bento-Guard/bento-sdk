@@ -138,7 +138,7 @@ export class BentoGuardClient {
     signature: string,
     options?: BentoProtectOptions
   ): Promise<AnalysisResult> {
-    const USE_OFFCHAIN = true; // Hidden flag to switch between off-chain and on-chain flow
+    const USE_OFFCHAIN = false; // Set to false to enable the secure on-chain flow
 
     if (USE_OFFCHAIN) {
       return offchainProtect(this, instruction, signature, options);
