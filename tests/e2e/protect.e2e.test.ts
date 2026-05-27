@@ -43,12 +43,10 @@ describe('BentoGuardClient protect() E2E', () => {
     // @ts-ignore
     client.api.buildAppendAndFinalize.mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' });
     // @ts-ignore
-    client.api.appendAndFinalize.mockResolvedValue({
-      verdict: {
-        decision: 'Blocked',
-        raw_score: 8000000,
-        reasoning: 'Simulated block reasoning'
-      }
+    client.api.postTransaction = jest.fn().mockResolvedValue({
+      recommendation: 'BLOCKED',
+      riskScore: 80,
+      reasoning: 'Simulated block reasoning'
     });
     // @ts-ignore
     client.api.getOnchainConfig.mockResolvedValue({

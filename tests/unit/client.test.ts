@@ -62,24 +62,23 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
-      verdict: {
-        decision: 'Approved',
-        raw_score: 500000,
-        reasoning: 'Instruction is perfectly safe.',
-      }
+    mockApiClientInstance.postTransaction.mockResolvedValue({
+      recommendation: 'ALLOW',
+      riskScore: 5,
+      reasoning: 'Instruction is perfectly safe.',
     });
 
     const result = await client.protect('send 100 sol to some address', 'mock-signature');
 
     expect(result.recommendation).toBe('ALLOW');
     expect(result.riskScore).toBe(5);
-    expect(mockApiClientInstance.appendAndFinalize).toHaveBeenCalledWith(
+    expect(mockApiClientInstance.postTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
-        agent_public_addr: expect.any(String),
-        action_id: expect.any(String),
-        chunk_len: expect.any(Number),
-        signed_transaction: expect.any(String),
+        agent_address: expect.any(String),
+        wallet_address: expect.any(String),
+        encrypted_payload: expect.any(String),
+        signature: expect.any(String),
+        base64_tx: expect.any(String)
       })
     );
   });
@@ -93,12 +92,10 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
-      verdict: {
-        decision: 'Blocked',
-        raw_score: 9500000,
-        reasoning: 'Malicious system command or sweep detected.',
-      }
+    mockApiClientInstance.postTransaction.mockResolvedValue({
+      recommendation: 'BLOCKED',
+      riskScore: 95,
+      reasoning: 'Malicious system command or sweep detected.',
     });
 
     await expect(
@@ -122,12 +119,11 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
-      verdict: {
-        decision: 'Escalated',
-        raw_score: 5000000,
-        reasoning: 'Requires manual review.',
-      }
+    mockApiClientInstance.postTransaction.mockResolvedValue({
+      recommendation: 'ESCALATED',
+      riskScore: 50,
+      reasoning: 'Requires manual review.',
+      actionId: 'mock-action-id'
     });
 
     // First call returns ESCALATED, second call returns ALLOW
