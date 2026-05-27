@@ -8,6 +8,7 @@ export enum BentoErrorCode {
   KEY_DERIVATION_FAILED = 'KEY_DERIVATION_FAILED',
   NOT_INITIALIZED = 'NOT_INITIALIZED',
   ALREADY_FINALIZED = 'ALREADY_FINALIZED',
+  NOT_FOUND = 'NOT_FOUND',
 }
 
 export class BentoError extends Error {

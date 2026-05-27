@@ -62,6 +62,15 @@ export class ApiClient {
     }
   }
 
+  public async checkRegistration(agentAddress: string): Promise<any> {
+    try {
+      const response = await this.axiosInstance.get(`/api/v1/agents/check-registration?agentAddress=${agentAddress}`);
+      return response.data?.data ?? response.data;
+    } catch (error: any) {
+      throw BentoError.fromError(error);
+    }
+  }
+
   public async getRelayerInfo(): Promise<any> {
     try {
       const response = await this.axiosInstance.get('/api/v1/system/relayer');

@@ -130,6 +130,22 @@ export class BentoGuardClient {
   }
 
   /**
+   * Verifies if the configured agent wallet is registered on the Bento dashboard.
+   */
+  public async verifyRegistration(options?: BentoProtectOptions): Promise<boolean> {
+    const agentAddress = this.getAgentAddress(options);
+    try {
+      const result = await this.api.checkRegistration(agentAddress);
+      return result?.registered === true || result === true;
+    } catch (error: any) {
+      if (error.code === BentoErrorCode.NOT_FOUND || error.message.includes('not found') || error.message.includes('Agent not found')) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Orchestrates the protection flow: dynamically runs the secure on-chain flow
    * (Solana L1 + Magicblock ER) using co-signing without exposing AGENT_PRIVATE_KEY.
    */
@@ -140,10 +156,20 @@ export class BentoGuardClient {
   ): Promise<AnalysisResult> {
     const USE_OFFCHAIN = true; // Set to false to enable the secure on-chain flow
 
-    if (USE_OFFCHAIN) {
-      return offchainProtect(this, instruction, signature, options);
-    } else {
-      return onchainProtect(this, instruction, signature, options);
+    try {
+      if (USE_OFFCHAIN) {
+        return await offchainProtect(this, instruction, signature, options);
+      } else {
+        return await onchainProtect(this, instruction, signature, options);
+      }
+    } catch (error: any) {
+      if (error.message && error.message.includes('Agent not found')) {
+        throw new BentoError(
+          BentoErrorCode.NOT_FOUND,
+          `Agent not found. Please ensure you have registered your agent wallet at https://app.bentoguard.xyz\nOriginal error: ${error.message}`
+        );
+      }
+      throw error;
     }
   }
 }

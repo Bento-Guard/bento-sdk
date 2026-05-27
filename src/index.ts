@@ -22,6 +22,22 @@ export async function protect(
   return client.protect(instruction, signature, options);
 }
 
+/**
+ * Verifies if the configured agent wallet is registered on the Bento dashboard.
+ * 
+ * @param options - Optional configuration overrides
+ * @returns True if registered, false otherwise.
+ */
+export async function verifyRegistration(
+  options?: BentoProtectOptions
+): Promise<boolean> {
+  if (!BentoGuardClient.isInitialized()) {
+    BentoGuardClient.initialize();
+  }
+  const client = BentoGuardClient.getInstance();
+  return client.verifyRegistration(options);
+}
+
 // Export the main client and its alias
 export { BentoGuardClient };
 export { BentoGuardClient as BentoClient };
