@@ -32,6 +32,7 @@ export class BentoError extends Error {
       return new BentoError(BentoErrorCode.UNAUTHORIZED, error.response?.data?.message || 'Unauthorized access');
     }
 
-    return new BentoError(defaultCode, error.message || 'An unknown error occurred', error);
+    const serverMessage = error.response?.data?.message;
+    return new BentoError(defaultCode, serverMessage || error.message || 'An unknown error occurred', error);
   }
 }

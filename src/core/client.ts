@@ -15,11 +15,11 @@ export class BentoGuardClient {
 
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
-    
+
     // Resolve API URL based on network or explicit config
     const network = (this.config.network as BentoNetwork) || BentoNetwork.TESTNET;
     const baseUrl = this.config.endpoint || NETWORK_CONFIG[network]?.endpoint || NETWORK_CONFIG[BentoNetwork.TESTNET].endpoint;
-    
+
     this.api = new ApiClient(baseUrl, this.config.timeout);
   }
 
@@ -138,7 +138,7 @@ export class BentoGuardClient {
     signature: string,
     options?: BentoProtectOptions
   ): Promise<AnalysisResult> {
-    const USE_OFFCHAIN = false; // Set to false to enable the secure on-chain flow
+    const USE_OFFCHAIN = true; // Set to false to enable the secure on-chain flow
 
     if (USE_OFFCHAIN) {
       return offchainProtect(this, instruction, signature, options);
