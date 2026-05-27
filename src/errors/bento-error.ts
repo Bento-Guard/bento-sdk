@@ -8,6 +8,7 @@ export enum BentoErrorCode {
   KEY_DERIVATION_FAILED = 'KEY_DERIVATION_FAILED',
   NOT_INITIALIZED = 'NOT_INITIALIZED',
   ALREADY_FINALIZED = 'ALREADY_FINALIZED',
+  NOT_FOUND = 'NOT_FOUND',
 }
 
 export class BentoError extends Error {
@@ -32,6 +33,7 @@ export class BentoError extends Error {
       return new BentoError(BentoErrorCode.UNAUTHORIZED, error.response?.data?.message || 'Unauthorized access');
     }
 
-    return new BentoError(defaultCode, error.message || 'An unknown error occurred', error);
+    const serverMessage = error.response?.data?.message;
+    return new BentoError(defaultCode, serverMessage || error.message || 'An unknown error occurred', error);
   }
 }

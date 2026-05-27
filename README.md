@@ -24,13 +24,13 @@
 2. [Target Audience: Who is this for?](#-target-audience-who-is-this-for)
 3. [The Strategic Solution](#-the-strategic-solution)
 4. [Core Technology & Infrastructure](#-core-technology--infrastructure)
-    - [MagicBlock Ephemeral Rollups](#magicblock-ephemeral-rollups)
-    - [BSIT Protocol (Cryptography)](#bsit-protocol-cryptography)
-5. [Installation & Setup](#-installation--setup)
-6. [Implementation Manual (Production Pattern)](#-implementation-manual-production-pattern)
-7. [Advanced Security Features](#-advanced-security-features)
-8. [Human-in-the-loop (Escalation)](#-human-in-the-loop-escalation)
-9. [FAQ](#-faq)
+5. [Prerequisites: Agent Registration (IMPORTANT)](#-prerequisites-agent-registration-important)
+6. [Installation & Setup](#-installation--setup)
+7. [Implementation Manual (Production Pattern)](#-implementation-manual-production-pattern)
+8. [Safe Demo & Devnet Testing](#-safe-demo--devnet-testing)
+9. [Advanced Security Features](#-advanced-security-features)
+10. [Human-in-the-loop (Escalation)](#-human-in-the-loop-escalation)
+11. [FAQ](#-faq)
 
 ---
 
@@ -90,11 +90,21 @@ We protect the "Security Handshake" using industry-standard cryptography:
 
 ---
 
+## 🔑 Prerequisites: Agent Registration (IMPORTANT)
+
+Before your agent can execute transactions via the Bento SDK, you **must register your agent's wallet** on the Bento Dashboard. If you skip this step, you will encounter an `Agent not found` error.
+
+1. Go to [https://app.bentoguard.xyz](https://app.bentoguard.xyz)
+2. Connect your owner wallet.
+3. Register your agent's public address (the one matching `AGENT_WALLET_PRIVATE_KEY`).
+
+---
+
 ## 🚀 Installation & Setup
 
 ### Install Dependencies
 ```bash
-npm install @bentoguard/sdk @solana/web3.js bs58
+npm install @bentoguard/sdk @solana/web3.js bs58 tweetnacl
 ```
 
 ### The "Magic" Setup Wizard
@@ -109,8 +119,14 @@ npx @bentoguard/sdk
 
 To ensure 100% reliability, your agent should follow this integration pattern. This ensures the instruction is audited and approved *before* any transactions are built or broadcasted.
 
+### Network Environments
+The SDK relies on the `BENTO_NETWORK` environment variable to determine where to send the audit request.
+- `mainnet`: Production API (Not fully available in beta).
+- `testnet` (Default): Uses `https://api.bentoguard.xyz`. This is the recommended environment for beta testing.
+- `devnet`: Uses `http://localhost:4001` (for local development only).
+
 ```typescript
-import { protect } from '@bentoguard/sdk';
+import { protect, verifyRegistration } from '@bentoguard/sdk';
 import { Keypair } from '@solana/web3.js';
 import * as nacl from 'tweetnacl';
 import bs58 from 'bs58';
@@ -121,6 +137,13 @@ import bs58 from 'bs58';
 async function executeSecureAgentAction() {
   // Load Agent's identity
   const agentKeypair = Keypair.fromSecretKey(bs58.decode(process.env.AGENT_WALLET_PRIVATE_KEY!));
+  
+  // 0. CHECK REGISTRATION FIRST
+  const isRegistered = await verifyRegistration({ agentAddress: agentKeypair.publicKey.toBase58() });
+  if (!isRegistered) {
+    console.error("Agent not found. Please register at https://app.bentoguard.xyz first.");
+    return;
+  }
 
   // 1. AGENT PLANNING PHASE
   const instruction = "Send 10 SOL to recipient address 2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG";
@@ -134,7 +157,7 @@ async function executeSecureAgentAction() {
   try {
     console.log("🛡️ Forwarding to Bento Guard Firewall...");
     
-    // 3. CALL THE GUARD: Instruction + Signature
+    // 3. CALL THE GUARD: protect(instruction, signature, options)
     const audit = await protect(instruction, signature, {
       agentAddress: agentKeypair.publicKey.toBase58(),
       // Default is true. Set to false if your app wants to return ESCALATED
@@ -155,12 +178,7 @@ async function executeSecureAgentAction() {
     } else if (audit.recommendation === 'ESCALATED') {
       console.warn("⚠️ High-Risk Action: Pending human approval in Bento Dashboard.");
       console.warn("Action ID:", audit.actionId);
-      console.warn("Review URL:", audit.reviewUrl);
-      console.warn("Approve URL:", audit.approveUrl);
-      console.warn("Block URL:", audit.blockUrl);
       // This branch is reached when autoPollEscalation is false.
-      // Keep the execution paused and only proceed after
-      // getActionStatus(actionId) returns final_decision = ALLOW.
     }
     
   } catch (error: any) {
@@ -172,6 +190,55 @@ async function executeSecureAgentAction() {
     }
   }
 }
+
+// Execute the integration
+executeSecureAgentAction().catch(console.error);
+```
+
+---
+
+## 🧪 Safe Demo & Devnet Testing
+
+If you are just exploring the concept with a **burner wallet (no funds)**, use the `testnet` environment (which defaults to the production backend). You can also explicitly verify registration to avoid cryptic errors.
+
+```typescript
+import { protect, verifyRegistration } from '@bentoguard/sdk';
+import { Keypair } from '@solana/web3.js';
+import * as nacl from 'tweetnacl';
+import bs58 from 'bs58';
+
+async function safeDemo() {
+  const agentKeypair = Keypair.generate(); // Burner wallet
+  const agentAddress = agentKeypair.publicKey.toBase58();
+  
+  // Inject into process.env so Bento SDK can use it for signing payloads
+  process.env.AGENT_WALLET_PRIVATE_KEY = bs58.encode(agentKeypair.secretKey);
+  
+  console.log("Generated Burner Wallet:", agentAddress);
+  console.log("Please register this wallet at https://app.bentoguard.xyz before proceeding!");
+  
+  // Check registration to ensure smooth onboarding
+  const registered = await verifyRegistration({ agentAddress });
+  if (!registered) {
+    console.error("🚨 Registration failed. The backend cannot find this agent.");
+    console.error("Go to https://app.bentoguard.xyz and register the wallet address.");
+    return;
+  }
+  
+  // Create a mock instruction
+  const instruction = "Swap 1 USDC for SOL on Jupiter.";
+  const signature = bs58.encode(nacl.sign.detached(new TextEncoder().encode(instruction), agentKeypair.secretKey));
+  
+  try {
+    const result = await protect(instruction, signature, { agentAddress });
+    console.log("Bento Verdict:", result.recommendation);
+  } catch (e: any) {
+    console.error("Error:", e.message);
+  }
+}
+
+// Execute the safe demo
+safeDemo().catch(console.error);
 ```
 
 ---

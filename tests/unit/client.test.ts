@@ -3,6 +3,7 @@ import { ApiClient } from '../../src/api/client';
 import { BentoError, BentoErrorCode } from '../../src/errors/bento-error';
 import * as nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { VersionedTransaction } from '@solana/web3.js';
 
 jest.mock('../../src/api/client');
 
@@ -14,6 +15,7 @@ describe('BentoGuardClient', () => {
     // @ts-ignore
     BentoGuardClient.instance = undefined;
     jest.clearAllMocks();
+    jest.spyOn(VersionedTransaction.prototype, 'sign').mockImplementation(() => {});
 
     mockApiClientInstance = {
       postTransaction: jest.fn(),
@@ -22,6 +24,12 @@ describe('BentoGuardClient', () => {
       getOnchainConfig: jest.fn().mockResolvedValue({
         relayer_encryption_key: Array.from(nacl.box.keyPair().publicKey),
       }),
+      buildInit: jest.fn().mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' }),
+      initAction: jest.fn().mockResolvedValue({}),
+      buildAppend: jest.fn().mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' }),
+      appendPayload: jest.fn().mockResolvedValue({}),
+      buildAppendAndFinalize: jest.fn().mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' }),
+      appendAndFinalize: jest.fn().mockResolvedValue({ verdict: { decision: 'Approved', raw_score: 50000, reasoning: 'Instruction is perfectly safe.' } }),
     };
     (ApiClient as jest.Mock).mockImplementation(() => mockApiClientInstance);
   });
@@ -70,7 +78,7 @@ describe('BentoGuardClient', () => {
         wallet_address: expect.any(String),
         encrypted_payload: expect.any(String),
         signature: expect.any(String),
-        base64_tx: expect.any(String),
+        base64_tx: expect.any(String)
       })
     );
   });
@@ -115,7 +123,7 @@ describe('BentoGuardClient', () => {
       recommendation: 'ESCALATED',
       riskScore: 50,
       reasoning: 'Requires manual review.',
-      actionId: 'action-123',
+      actionId: 'mock-action-id'
     });
 
     // First call returns ESCALATED, second call returns ALLOW

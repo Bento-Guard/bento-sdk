@@ -3,15 +3,16 @@ import { ApiClient } from '../../src/api/client';
 import { BentoError } from '../../src/errors/bento-error';
 import * as nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { VersionedTransaction } from '@solana/web3.js';
 
 // Mock the API Client so it doesn't call real servers
 jest.mock('../../src/api/client');
 
 describe('BentoGuardClient protect() E2E', () => {
   beforeEach(() => {
-    // @ts-ignore
     BentoGuardClient.instance = undefined;
     jest.clearAllMocks();
+    jest.spyOn(VersionedTransaction.prototype, 'sign').mockImplementation(() => {});
   });
 
   it('should block high risk actions', async () => {
@@ -32,12 +33,20 @@ describe('BentoGuardClient protect() E2E', () => {
     client.api = new mockApiClient();
     
     // @ts-ignore
-    client.api.postTransaction.mockResolvedValue({
-      success: true,
+    client.api.buildInit.mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' });
+    // @ts-ignore
+    client.api.initAction.mockResolvedValue({});
+    // @ts-ignore
+    client.api.buildAppend.mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' });
+    // @ts-ignore
+    client.api.appendPayload.mockResolvedValue({});
+    // @ts-ignore
+    client.api.buildAppendAndFinalize.mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' });
+    // @ts-ignore
+    client.api.postTransaction = jest.fn().mockResolvedValue({
       recommendation: 'BLOCKED',
       riskScore: 80,
-      reasoning: 'Simulated block reasoning',
-      timestamp: new Date().toISOString()
+      reasoning: 'Simulated block reasoning'
     });
     // @ts-ignore
     client.api.getOnchainConfig.mockResolvedValue({
