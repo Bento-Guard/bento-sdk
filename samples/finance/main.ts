@@ -49,7 +49,6 @@ async function protectIntent(intent: string) {
   try {
     const analysis = await secureExecute({
       instruction: intent,
-      rawTransaction: txDraft.rawTx,
     });
     await handleAnalysisResult(analysis);
   } catch (error: any) {
