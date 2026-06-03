@@ -29,7 +29,9 @@ export async function onchainProtect(
       onchainConfig.relayer_encryption_key,
     );
 
-    const txBytes = Buffer.from("", "base64");
+    // Use minimal dummy tx bytes to satisfy payload encoding (intent-only flow)
+    // Matches the test script pattern: tx: new Uint8Array([1, 2, 3])
+    const txBytes = new Uint8Array([1, 2, 3]);
 
     const plaintext = encodeActionPayload({
       prompt: instruction,
