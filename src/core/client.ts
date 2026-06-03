@@ -132,6 +132,13 @@ export class BentoGuardClient {
   }
 
   /**
+   * Fetches the current status of an escalated action.
+   */
+  public async getActionStatus(actionId: string): Promise<any> {
+    return this.api.getActionStatus(actionId);
+  }
+
+  /**
    * Orchestrates the protection flow: dynamically runs the secure on-chain flow
    * (Solana L1 + Magicblock ER) using co-signing without exposing AGENT_PRIVATE_KEY.
    */
