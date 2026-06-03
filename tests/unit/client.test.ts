@@ -62,25 +62,19 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.postTransaction.mockResolvedValue({
-      recommendation: 'ALLOW',
-      riskScore: 5,
-      reasoning: 'Instruction is perfectly safe.',
+    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
+      verdict: {
+        decision: 'Approved',
+        raw_score: 50000,
+        reasoning: 'Instruction is perfectly safe.',
+      }
     });
 
-    const result = await client.protect('send 100 sol to some address', 'mock-signature');
+    const result = await client.protect('send 100 sol to some address');
 
     expect(result.recommendation).toBe('ALLOW');
-    expect(result.riskScore).toBe(5);
-    expect(mockApiClientInstance.postTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        agent_address: expect.any(String),
-        wallet_address: expect.any(String),
-        encrypted_payload: expect.any(String),
-        signature: expect.any(String),
-        base64_tx: expect.any(String)
-      })
-    );
+    expect(result.riskScore).toBe(0.5);
+    expect(mockApiClientInstance.appendAndFinalize).toHaveBeenCalled();
   });
 
   it('should throw BentoError when protect returns BLOCKED recommendation', async () => {
@@ -92,18 +86,20 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.postTransaction.mockResolvedValue({
-      recommendation: 'BLOCKED',
-      riskScore: 95,
-      reasoning: 'Malicious system command or sweep detected.',
+    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
+      verdict: {
+        decision: 'Blocked',
+        raw_score: 95000,
+        reasoning: 'Malicious system command or sweep detected.',
+      }
     });
 
     await expect(
-      client.protect('send 100 sol to some address', 'mock-signature')
+      client.protect('send 100 sol to some address')
     ).rejects.toThrow(BentoError);
 
     try {
-      await client.protect('send 100 sol to some address', 'mock-signature');
+      await client.protect('send 100 sol to some address');
     } catch (err: any) {
       expect(err.code).toBe(BentoErrorCode.HIGH_RISK_DETECTED);
       expect(err.message).toContain('Action blocked');
@@ -119,11 +115,12 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.postTransaction.mockResolvedValue({
-      recommendation: 'ESCALATED',
-      riskScore: 50,
-      reasoning: 'Requires manual review.',
-      actionId: 'mock-action-id'
+    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
+      verdict: {
+        decision: 'Escalated',
+        raw_score: 50000,
+        reasoning: 'Requires manual review.',
+      }
     });
 
     // First call returns ESCALATED, second call returns ALLOW
@@ -131,7 +128,8 @@ describe('BentoGuardClient', () => {
       .mockResolvedValueOnce({ final_decision: 'ESCALATED' })
       .mockResolvedValueOnce({ final_decision: 'ALLOW', reason: 'Approved by owner manually.' });
 
-    const result = await client.protect('send 100 sol to some address', 'mock-signature', {
+    const result = await client.protect('send 100 sol to some address', {
+      autoPollEscalation: true,
       pollIntervalMs: 10,
       pollTimeoutMs: 1000,
     });

@@ -43,10 +43,12 @@ describe('BentoGuardClient protect() E2E', () => {
     // @ts-ignore
     client.api.buildAppendAndFinalize.mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' });
     // @ts-ignore
-    client.api.postTransaction = jest.fn().mockResolvedValue({
-      recommendation: 'BLOCKED',
-      riskScore: 80,
-      reasoning: 'Simulated block reasoning'
+    client.api.appendAndFinalize = jest.fn().mockResolvedValue({
+      verdict: {
+        decision: 'Blocked',
+        raw_score: 80000,
+        reasoning: 'Simulated block reasoning'
+      }
     });
     // @ts-ignore
     client.api.getOnchainConfig.mockResolvedValue({
@@ -55,7 +57,7 @@ describe('BentoGuardClient protect() E2E', () => {
     // @ts-ignore
     client.api.getRelayerInfo.mockResolvedValue({});
 
-    await expect(client.protect('Transfer 1000 SOL', 'mock-signature')).rejects.toThrow(BentoError);
-    await expect(client.protect('Transfer 1000 SOL', 'mock-signature')).rejects.toThrow('Action blocked: Simulated block reasoning');
+    await expect(client.protect('Transfer 1000 SOL')).rejects.toThrow(BentoError);
+    await expect(client.protect('Transfer 1000 SOL')).rejects.toThrow('Action blocked: Simulated block reasoning');
   });
 });

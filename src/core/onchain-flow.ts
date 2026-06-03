@@ -185,8 +185,8 @@ export async function onchainProtect(
         return result;
       }
 
-      const pollInterval = POLL_INTERVAL_MS;
-      const pollTimeout = POLL_TIMEOUT_MS;
+      const pollInterval = options?.pollIntervalMs || POLL_INTERVAL_MS;
+      const pollTimeout = options?.pollTimeoutMs || POLL_TIMEOUT_MS;
       const startTime = Date.now();
 
       while (Date.now() - startTime < pollTimeout) {
