@@ -1,7 +1,7 @@
-import { x25519 } from '@noble/curves/ed25519';
-import { chacha20poly1305 } from '@noble/ciphers/chacha';
-import { randomBytes } from '@noble/ciphers/webcrypto';
-import { blake3 } from '@noble/hashes/blake3';
+import { x25519 } from "@noble/curves/ed25519";
+import { chacha20poly1305 } from "@noble/ciphers/chacha";
+import { randomBytes } from "@noble/ciphers/webcrypto";
+import { blake3 } from "@noble/hashes/blake3";
 
 export const X25519_KEY_LENGTH = 32;
 export const NONCE_LENGTH = 12;

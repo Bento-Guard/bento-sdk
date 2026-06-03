@@ -1,9 +1,9 @@
-import { BentoNetwork } from '../constants';
+import { BentoNetwork } from "../constants";
 
 export interface BentoGuardConfig {
   agentAddress?: string; // Optional: Explicit Agent Public Address
   agentWalletPrivateKey?: string; // Optional: Used to derive agentAddress if not provided
-  network?: BentoNetwork | 'mainnet' | 'devnet';
+  network?: BentoNetwork | "mainnet" | "devnet";
   endpoint?: string; // Optional: Override default API URL
   timeout?: number;
 }
@@ -24,7 +24,7 @@ export interface EncryptedPayload {
 }
 
 export interface AnalysisResult {
-  recommendation: 'ALLOW' | 'BLOCKED' | 'ESCALATED';
+  recommendation: "ALLOW" | "BLOCKED" | "ESCALATED";
   riskScore: number;
   reasoning: string;
   actionId?: string;
@@ -38,4 +38,3 @@ export interface AnalysisResult {
     policyViolations?: string[];
   };
 }
-
