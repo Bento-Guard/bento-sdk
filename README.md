@@ -119,11 +119,8 @@ npx @bentoguard/sdk
 
 To ensure 100% reliability, your agent should follow this integration pattern. This ensures the instruction is audited and approved *before* any transactions are built or broadcasted.
 
-### Network Environments
-The SDK relies on the `BENTO_NETWORK` environment variable to determine where to send the audit request.
-- `mainnet`: Production API (Not fully available in beta).
-- `testnet` (Default): Uses `https://api.bentoguard.xyz`. This is the recommended environment for beta testing.
-- `devnet`: Uses `http://localhost:4001` (for local development only).
+### Automatic Configuration
+The SDK automatically handles API connections. You only need to provide your `AGENT_WALLET_PRIVATE_KEY` for the system to identify and secure your agent.
 
 ```typescript
 import { protect, verifyRegistration } from '@bentoguard/sdk';
@@ -148,23 +145,15 @@ async function executeSecureAgentAction() {
   // 1. AGENT PLANNING PHASE
   const instruction = "Send 10 SOL to recipient address 2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG";
   
-  // 2. SIGNING THE INSTRUCTION
-  // Generate the Ed25519 signature of the instruction using the Agent's private key
-  const messageBytes = new TextEncoder().encode(instruction);
-  const signatureBytes = nacl.sign.detached(messageBytes, agentKeypair.secretKey);
-  const signature = bs58.encode(signatureBytes);
-
   try {
     console.log("🛡️ Forwarding to Bento Guard Firewall...");
     
-    // 3. CALL THE GUARD: protect(instruction, signature, options)
-    const audit = await protect(instruction, signature, {
-      agentAddress: agentKeypair.publicKey.toBase58(),
+    // 2. CALL THE GUARD: protect(instruction, options)
+    // The SDK uses the configured private key to sign the raw payload and sends it to the API.
+    const audit = await protect(instruction, {
       // Default is true. Set to false if your app wants to return ESCALATED
       // immediately and handle dashboard/deep-link approval itself.
       autoPollEscalation: true,
-      pollIntervalMs: 2000,
-      pollTimeoutMs: 300000,
     });
     
     if (audit.recommendation === 'ALLOW') {
@@ -227,10 +216,9 @@ async function safeDemo() {
   
   // Create a mock instruction
   const instruction = "Swap 1 USDC for SOL on Jupiter.";
-  const signature = bs58.encode(nacl.sign.detached(new TextEncoder().encode(instruction), agentKeypair.secretKey));
   
   try {
-    const result = await protect(instruction, signature, { agentAddress });
+    const result = await protect(instruction);
     console.log("Bento Verdict:", result.recommendation);
   } catch (e: any) {
     console.error("Error:", e.message);

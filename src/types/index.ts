@@ -3,7 +3,6 @@ import { BentoNetwork } from "../constants";
 export interface BentoGuardConfig {
   agentAddress?: string; // Optional: Explicit Agent Public Address
   agentWalletPrivateKey?: string; // Optional: Used to derive agentAddress if not provided
-  network?: BentoNetwork | "mainnet" | "devnet";
   endpoint?: string; // Optional: Override default API URL
   timeout?: number;
 }
@@ -13,8 +12,6 @@ export interface BentoProtectOptions {
   timeout?: number;
   silent?: boolean;
   autoPollEscalation?: boolean;
-  pollIntervalMs?: number;
-  pollTimeoutMs?: number;
 }
 
 export interface EncryptedPayload {

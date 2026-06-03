@@ -182,7 +182,6 @@ ${COLORS.CYAN}${COLORS.BOLD}----------------------------------------------------
         const bentoEnv = `
 # Bento Guard Credentials
 ${walletKey ? `AGENT_WALLET_PRIVATE_KEY=${walletKey}` : '# AGENT_WALLET_PRIVATE_KEY='}
-BENTO_NETWORK=solana
 GEMINI_API_KEY=${geminiKey || 'your_gemini_api_key_here'}
 GEMINI_MODEL=gemini-2.5-flash
         `.trim();

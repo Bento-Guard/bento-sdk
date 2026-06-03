@@ -7,7 +7,7 @@ import {
 } from "../types";
 import { ApiClient } from "../api/client";
 import { BentoError, BentoErrorCode } from "../errors/bento-error";
-import { BentoNetwork, NETWORK_CONFIG } from "../constants";
+import { USE_OFFCHAIN, BENTO_GUARD_DEFAULT_URL } from "../constants";
 
 import { offchainProtect } from "./offchain-flow";
 import { onchainProtect } from "./onchain-flow";
@@ -20,13 +20,9 @@ export class BentoGuardClient {
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
 
-    // Resolve API URL based on network or explicit config
-    const network =
-      (this.config.network as BentoNetwork) || BentoNetwork.TESTNET;
     const baseUrl =
       this.config.endpoint ||
-      NETWORK_CONFIG[network]?.endpoint ||
-      NETWORK_CONFIG[BentoNetwork.TESTNET].endpoint;
+      BENTO_GUARD_DEFAULT_URL;
 
     this.api = new ApiClient(baseUrl, this.config.timeout);
   }
@@ -40,11 +36,9 @@ export class BentoGuardClient {
     } else if (config) {
       // Allow re-initialization with new config if explicitly provided
       BentoGuardClient.instance.config = config;
-      const network = (config.network as BentoNetwork) || BentoNetwork.TESTNET;
       const baseUrl =
         config.endpoint ||
-        NETWORK_CONFIG[network]?.endpoint ||
-        NETWORK_CONFIG[BentoNetwork.TESTNET].endpoint;
+        BENTO_GUARD_DEFAULT_URL;
       BentoGuardClient.instance.api = new ApiClient(baseUrl, config.timeout);
     }
     return BentoGuardClient.instance;
@@ -72,8 +66,6 @@ export class BentoGuardClient {
         process.env.AGENT_WALLET_PRIVATE_KEY ||
         process.env.AGENT_PRIVATE_KEY ||
         "",
-      network:
-        (process.env.BENTO_NETWORK as BentoNetwork) || BentoNetwork.TESTNET,
       endpoint: process.env.BENTO_ENDPOINT || process.env.BENTO_API_URL,
       timeout: process.env.BENTO_TIMEOUT_MS
         ? Number(process.env.BENTO_TIMEOUT_MS)
@@ -145,21 +137,17 @@ export class BentoGuardClient {
    */
   public async protect(
     instruction: string,
-    rawTransaction: string,
     options?: BentoProtectOptions,
   ): Promise<AnalysisResult> {
-    const USE_OFFCHAIN = true; // Set to false to enable the secure on-chain flow
-
     try {
       if (USE_OFFCHAIN) {
         return await offchainProtect(
           this,
           instruction,
-          rawTransaction,
           options,
         );
       } else {
-        return await onchainProtect(this, instruction, rawTransaction, options);
+        return await onchainProtect(this, instruction, options);
       }
     } catch (error: any) {
       if (error.message && error.message.includes("Agent not found")) {

@@ -1,5 +1,6 @@
 import { PublicKey, VersionedTransaction, Connection } from "@solana/web3.js";
 import { BentoProtectOptions, AnalysisResult } from "../types";
+import { POLL_INTERVAL_MS, POLL_TIMEOUT_MS, CHUNK_SIZE } from "../constants";
 import { BentoError, BentoErrorCode } from "../errors/bento-error";
 import { encodeActionPayload } from "../utils/borsh-helper";
 import {
@@ -11,7 +12,6 @@ import { BentoGuardClient } from "./client";
 export async function onchainProtect(
   client: BentoGuardClient,
   instruction: string,
-  rawTransaction: string,
   options?: BentoProtectOptions,
 ): Promise<AnalysisResult> {
   try {
@@ -29,7 +29,7 @@ export async function onchainProtect(
       onchainConfig.relayer_encryption_key,
     );
 
-    const txBytes = Buffer.from(rawTransaction, "base64");
+    const txBytes = Buffer.from("", "base64");
 
     const plaintext = encodeActionPayload({
       prompt: instruction,
@@ -80,7 +80,7 @@ export async function onchainProtect(
     // (Optional logging or parsing of actionPdaStr can remain if needed)
 
     const payloadBuffer = Buffer.from(encrypted.payload);
-    const CHUNK_SIZE = 900;
+
     let offset = 0;
 
     let finalizeRes: any = null;
@@ -185,8 +185,8 @@ export async function onchainProtect(
         return result;
       }
 
-      const pollInterval = options?.pollIntervalMs ?? 2000;
-      const pollTimeout = options?.pollTimeoutMs ?? 300000; // 5 minutes default
+      const pollInterval = POLL_INTERVAL_MS;
+      const pollTimeout = POLL_TIMEOUT_MS;
       const startTime = Date.now();
 
       while (Date.now() - startTime < pollTimeout) {

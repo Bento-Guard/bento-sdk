@@ -2,7 +2,6 @@ import { BentoClient, protect, AnalysisResult } from "@bentoguard/sdk";
 
 export interface ProtectInput {
   instruction: string;
-  rawTransaction: string;
 }
 
 function assertProtectInput(input: ProtectInput) {
@@ -11,13 +10,7 @@ function assertProtectInput(input: ProtectInput) {
   }
 
   // SDK expects Base64 raw transaction string.
-  const base64Pattern =
-    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-  if (!input.rawTransaction?.trim() || !base64Pattern.test(input.rawTransaction)) {
-    throw new Error(
-      "Invalid protect input: rawTransaction must be a Base64 string.",
-    );
-  }
+
 }
 
 /**
@@ -35,12 +28,9 @@ export async function secureExecute(
   }
 
   // 2. CALL THE GUARD: The main protection point
-  // We send instruction + raw unsigned transaction (Base64)
-  return await protect(input.instruction, input.rawTransaction, {
+  return await protect(input.instruction, {
     timeout: Number(process.env.BENTO_PROTECT_TIMEOUT_MS || 15000),
     autoPollEscalation: process.env.BENTO_AUTO_POLL_ESCALATION !== "false",
-    pollIntervalMs: Number(process.env.BENTO_POLL_INTERVAL_MS || 2000),
-    pollTimeoutMs: Number(process.env.BENTO_POLL_TIMEOUT_MS || 300000),
   });
 }
 

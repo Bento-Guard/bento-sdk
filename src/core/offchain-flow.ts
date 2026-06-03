@@ -1,4 +1,5 @@
 import { BentoProtectOptions, AnalysisResult } from "../types";
+import { POLL_INTERVAL_MS, POLL_TIMEOUT_MS } from "../constants";
 import { BentoError, BentoErrorCode } from "../errors/bento-error";
 import { encodeActionPayload } from "../utils/borsh-helper";
 import { encryptForRelayer } from "../utils/crypto-helper";
@@ -9,7 +10,6 @@ import bs58 from "bs58";
 export async function offchainProtect(
   client: BentoGuardClient,
   instruction: string,
-  rawTransaction: string,
   options?: BentoProtectOptions,
 ): Promise<AnalysisResult> {
   try {
@@ -22,7 +22,7 @@ export async function offchainProtect(
       onchainConfig.relayer_encryption_key,
     );
 
-    const txBytes = Buffer.from(rawTransaction, "base64");
+    const txBytes = Buffer.from("", "base64");
 
     const plaintext = encodeActionPayload({
       prompt: instruction,
@@ -37,7 +37,7 @@ export async function offchainProtect(
     const encryptedPayloadB64 = Buffer.from(encrypted.payload).toString(
       "base64",
     );
-    const base64Tx = rawTransaction;
+    const base64Tx = "";
 
     // The backend expects the signature over the combined payload for verification
     const combinedPayload = `${encryptedPayloadB64}.${base64Tx}`;
@@ -54,7 +54,6 @@ export async function offchainProtect(
       encrypted_payload: encryptedPayloadB64,
       signature: validSignature,
       base64_tx: base64Tx,
-      network: client.config.network as string,
     });
 
     if (result.recommendation === "BLOCKED") {
@@ -74,8 +73,8 @@ export async function offchainProtect(
         return result;
       }
 
-      const pollInterval = options?.pollIntervalMs ?? 2000;
-      const pollTimeout = options?.pollTimeoutMs ?? 300000;
+      const pollInterval = POLL_INTERVAL_MS;
+      const pollTimeout = POLL_TIMEOUT_MS;
       const startTime = Date.now();
 
       while (Date.now() - startTime < pollTimeout) {

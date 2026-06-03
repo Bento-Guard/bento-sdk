@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { Transaction, SystemProgram, PublicKey } from "@solana/web3.js";
 
 const BASE58_ALPHABET =
   "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -19,36 +20,26 @@ export function generateRealisticRawTx() {
 }
 
 export function generateUnsignedTransactionDraft(): UnsignedTransactionDraft {
-  const feePayer = randomSolanaAddress();
-  const recipient = randomSolanaAddress();
-  const programId = randomKnownProgramId();
+  const feePayer = new PublicKey(randomSolanaAddress());
+  const recipient = new PublicKey(randomSolanaAddress());
+  const programId = SystemProgram.programId;
   const recentBlockhash = randomSolanaAddress();
-  const instructionData = randomBytes(24).toString("base64");
 
-  const unsignedMessage = {
-    version: "legacy",
-    signatures: [],
-    header: {
-      numRequiredSignatures: 1,
-      numReadonlySignedAccounts: 0,
-      numReadonlyUnsignedAccounts: 1,
-    },
-    accountKeys: [feePayer, recipient, programId],
-    recentBlockhash,
-    instructions: [
-      {
-        programIdIndex: 2,
-        accounts: [0, 1],
-        data: instructionData,
-      },
-    ],
-  };
+  const tx = new Transaction();
+  tx.feePayer = feePayer;
+  tx.recentBlockhash = recentBlockhash;
+  
+  tx.add(SystemProgram.transfer({
+    fromPubkey: feePayer,
+    toPubkey: recipient,
+    lamports: 1000
+  }));
 
   return {
-    rawTx: Buffer.from(JSON.stringify(unsignedMessage)).toString("base64"),
-    feePayer,
-    recipient,
-    programId,
+    rawTx: tx.serialize({ verifySignatures: false, requireAllSignatures: false }).toString("base64"),
+    feePayer: feePayer.toBase58(),
+    recipient: recipient.toBase58(),
+    programId: programId.toBase58(),
     recentBlockhash,
   };
 }
