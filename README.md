@@ -147,18 +147,12 @@ async function executeSecureAgentAction() {
 
   // 1. AGENT PLANNING PHASE
   const instruction = "Send 10 SOL to recipient address 2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG";
-  
-  // 2. SIGNING THE INSTRUCTION
-  // Generate the Ed25519 signature of the instruction using the Agent's private key
-  const messageBytes = new TextEncoder().encode(instruction);
-  const signatureBytes = nacl.sign.detached(messageBytes, agentKeypair.secretKey);
-  const signature = bs58.encode(signatureBytes);
 
   try {
     console.log("🛡️ Forwarding to Bento Guard Firewall...");
     
-    // 3. CALL THE GUARD: protect(instruction, signature, options)
-    const audit = await protect(instruction, signature, {
+    // 2. CALL THE GUARD: protect(instruction, options)
+    const audit = await protect(instruction, {
       agentAddress: agentKeypair.publicKey.toBase58(),
       // Default is true. Set to false if your app wants to return ESCALATED
       // immediately and handle dashboard/deep-link approval itself.
@@ -171,7 +165,7 @@ async function executeSecureAgentAction() {
       console.log("✅ Audit Passed:", audit.reasoning);
       console.log("Risk Score:", audit.riskScore);
       
-      // 4. SIGNING & BROADCAST PHASE
+      // 3. EXECUTION PHASE
       // Safe to build and broadcast your transaction now
       console.log("🚀 Executing secure transaction...");
       
@@ -227,10 +221,9 @@ async function safeDemo() {
   
   // Create a mock instruction
   const instruction = "Swap 1 USDC for SOL on Jupiter.";
-  const signature = bs58.encode(nacl.sign.detached(new TextEncoder().encode(instruction), agentKeypair.secretKey));
   
   try {
-    const result = await protect(instruction, signature, { agentAddress });
+    const result = await protect(instruction, { agentAddress });
     console.log("Bento Verdict:", result.recommendation);
   } catch (e: any) {
     console.error("Error:", e.message);
@@ -267,7 +260,7 @@ Bento Guard's **Escalation Engine** allows:
 If your application wants to handle review itself, pass:
 
 ```typescript
-const audit = await protect(instruction, signature, {
+const audit = await protect(instruction, {
   agentAddress: agentKeypair.publicKey.toBase58(),
   autoPollEscalation: false,
 });
@@ -285,7 +278,7 @@ if (audit.recommendation === 'ESCALATED') {
 ## ❓ FAQ
 
 **Q: Does Bento Guard store my Private Keys?**
-**A:** No. Your private keys never leave your agent's environment. We only receive the unsigned transaction bytes for simulation.
+**A:** No. Your private keys never leave your agent's environment. The SDK handles signing the payloads locally using your configured key and only sends the signed intent securely over the network.
 
 **Q: How much latency does this add?**
 **A:** Thanks to MagicBlock Ephemeral Rollups, the overhead is typically under 500ms—faster than most LLM inference times.
