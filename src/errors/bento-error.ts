@@ -42,6 +42,17 @@ export class BentoError extends Error {
       );
     }
 
+    if (error.response?.status === 400) {
+      const msg: string = error.response?.data?.message ?? "";
+      if (
+        msg.toLowerCase().includes("threat") ||
+        msg.toLowerCase().includes("high risk") ||
+        msg.toLowerCase().includes("security check")
+      ) {
+        return new BentoError(BentoErrorCode.HIGH_RISK_DETECTED, msg, error);
+      }
+    }
+
     const serverMessage = error.response?.data?.message;
     return new BentoError(
       defaultCode,
