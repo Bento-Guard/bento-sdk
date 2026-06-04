@@ -9,6 +9,23 @@ import {
 } from "../utils/crypto-helper";
 import { BentoGuardClient } from "./client";
 
+const BOOTSTRAP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+let _bootstrapCache: {
+  relayerInfo: any;
+  onchainConfig: any;
+  ts: number;
+} | null = null;
+
+async function getBootstrapConfig(client: BentoGuardClient) {
+  if (_bootstrapCache && Date.now() - _bootstrapCache.ts < BOOTSTRAP_TTL_MS) {
+    return _bootstrapCache;
+  }
+  const relayerInfo = await client.api.getRelayerInfo();
+  const onchainConfig = await client.api.getOnchainConfig();
+  _bootstrapCache = { relayerInfo, onchainConfig, ts: Date.now() };
+  return _bootstrapCache;
+}
+
 export async function onchainProtect(
   client: BentoGuardClient,
   instruction: string,
@@ -19,11 +36,12 @@ export async function onchainProtect(
     const agentAddress = agentKeypair.publicKey.toBase58();
 
     // 1. Fetch system relayer and config details dynamically from backend
-    console.log(
-      "🔗 Fetching relayer and config bootstrap data from backend...",
-    );
-    const relayerInfo = await client.api.getRelayerInfo();
-    const onchainConfig = await client.api.getOnchainConfig();
+    if (!options?.silent) {
+      console.log(
+        "🔗 Fetching relayer and config bootstrap data from backend...",
+      );
+    }
+    const { relayerInfo, onchainConfig } = await getBootstrapConfig(client);
 
     const relayerPublicKey = new Uint8Array(
       onchainConfig.relayer_encryption_key,
@@ -44,8 +62,12 @@ export async function onchainProtect(
     const commitmentHash = commitmentHashAsArray(plaintext);
     const totalDataLen = encrypted.payload.length;
 
-    // Generate a unique monotonic action id
-    const actionId = Date.now().toString();
+    // Generate a unique action id — crypto.randomUUID() avoids millisecond collisions
+    // that occur when protect() is called concurrently (Date.now() produces identical IDs)
+    const actionId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
     const targetProgram = relayerInfo.program_id; // Default to Bento program ID for tracking
 
@@ -165,6 +187,9 @@ export async function onchainProtect(
       riskScore: verdict.raw_score / 100000, // Normalize to 0-1 range
       reasoning: verdict.reasoning,
       actionId: actionId,
+      approveUrl: verdict.approve_url,
+      blockUrl: verdict.block_url,
+      reviewUrl: verdict.review_url,
     };
 
     // 6. Firewall and Human-in-the-Loop Polling if Escalated
@@ -177,9 +202,11 @@ export async function onchainProtect(
     }
 
     if (result.recommendation === "ESCALATED") {
-      console.warn(
-        `[BENTO WARNING] Action escalated for review: ${result.reasoning}`,
-      );
+      if (!options?.silent) {
+        console.warn(
+          `[BENTO WARNING] Action escalated for review: ${result.reasoning}`,
+        );
+      }
 
       if (options?.autoPollEscalation === false) {
         return result;
@@ -209,9 +236,11 @@ export async function onchainProtect(
           }
         } catch (err: any) {
           if (err instanceof BentoError) throw err;
-          console.warn(
-            `[BENTO WARNING] Error during action status polling: ${err.message}`,
-          );
+          if (!options?.silent) {
+            console.warn(
+              `[BENTO WARNING] Error during action status polling: ${err.message}`,
+            );
+          }
         }
       }
 

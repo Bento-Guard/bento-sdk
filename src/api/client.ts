@@ -53,9 +53,11 @@ export class ApiClient {
       const serverMessage =
         serverData?.message || serverData?.error?.message || error.message;
 
-      console.error(
-        `[SDK] POST ERROR: ${serverMessage} (Status: ${status || "N/A"})`,
-      );
+      if (process.env.BENTO_DEBUG === "true") {
+        console.error(
+          `[SDK] POST ERROR: ${serverMessage} (Status: ${status || "N/A"})`,
+        );
+      }
 
       throw BentoError.fromError(error);
     }

@@ -31,5 +31,5 @@ export const DEFAULT_TIMEOUT = 120000;
 export const POLL_INTERVAL_MS = 3000;
 export const POLL_TIMEOUT_MS = 300000;
 
-export const USE_OFFCHAIN = false; // Set to false to enable the secure on-chain flow
+export const USE_OFFCHAIN = false; // true = offchain flow | false = onchain flow (default)
 export const CHUNK_SIZE = 900;
