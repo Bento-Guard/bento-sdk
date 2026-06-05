@@ -1,6 +1,6 @@
 import { PublicKey, VersionedTransaction, Connection } from "@solana/web3.js";
 import { BentoProtectOptions, AnalysisResult } from "../types";
-import { POLL_INTERVAL_MS, POLL_TIMEOUT_MS, CHUNK_SIZE } from "../constants";
+import { POLL_INTERVAL_MS, POLL_TIMEOUT_MS, CHUNK_SIZE, BOOTSTRAP_TTL_MS } from "../constants";
 import { BentoError, BentoErrorCode } from "../errors/bento-error";
 import { encodeActionPayload } from "../utils/borsh-helper";
 import {
@@ -8,6 +8,22 @@ import {
   commitmentHashAsArray,
 } from "../utils/crypto-helper";
 import { BentoGuardClient } from "./client";
+
+let _bootstrapCache: {
+  relayerInfo: any;
+  onchainConfig: any;
+  ts: number;
+} | null = null;
+
+async function getBootstrapConfig(client: BentoGuardClient) {
+  if (_bootstrapCache && Date.now() - _bootstrapCache.ts < BOOTSTRAP_TTL_MS) {
+    return _bootstrapCache;
+  }
+  const relayerInfo = await client.api.getRelayerInfo();
+  const onchainConfig = await client.api.getOnchainConfig();
+  _bootstrapCache = { relayerInfo, onchainConfig, ts: Date.now() };
+  return _bootstrapCache;
+}
 
 export async function onchainProtect(
   client: BentoGuardClient,
@@ -19,11 +35,12 @@ export async function onchainProtect(
     const agentAddress = agentKeypair.publicKey.toBase58();
 
     // 1. Fetch system relayer and config details dynamically from backend
-    console.log(
-      "🔗 Fetching relayer and config bootstrap data from backend...",
-    );
-    const relayerInfo = await client.api.getRelayerInfo();
-    const onchainConfig = await client.api.getOnchainConfig();
+    if (!options?.silent) {
+      console.log(
+        "🔗 Fetching relayer and config bootstrap data from backend...",
+      );
+    }
+    const { relayerInfo, onchainConfig } = await getBootstrapConfig(client);
 
     const relayerPublicKey = new Uint8Array(
       onchainConfig.relayer_encryption_key,
@@ -47,7 +64,10 @@ export async function onchainProtect(
     const totalDataLen = encrypted.payload.length;
 
     // Generate a unique monotonic action id
-    const actionId = Date.now().toString();
+    const actionId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
     const targetProgram = relayerInfo.program_id; // Default to Bento program ID for tracking
 
@@ -179,9 +199,11 @@ export async function onchainProtect(
     }
 
     if (result.recommendation === "ESCALATED") {
-      console.warn(
-        `[BENTO WARNING] Action escalated for review: ${result.reasoning}`,
-      );
+      if (!options?.silent) {
+        console.warn(
+          `[BENTO WARNING] Action escalated for review: ${result.reasoning}`,
+        );
+      }
 
       if (options?.autoPollEscalation === false) {
         return result;
@@ -211,9 +233,11 @@ export async function onchainProtect(
           }
         } catch (err: any) {
           if (err instanceof BentoError) throw err;
-          console.warn(
-            `[BENTO WARNING] Error during action status polling: ${err.message}`,
-          );
+          if (!options?.silent) {
+            console.warn(
+              `[BENTO WARNING] Error during action status polling: ${err.message}`,
+            );
+          }
         }
       }
 

@@ -30,6 +30,7 @@ export const BENTO_GUARD_DEFAULT_URL =
 export const DEFAULT_TIMEOUT = 120000;
 export const POLL_INTERVAL_MS = 3000;
 export const POLL_TIMEOUT_MS = 300000;
+export const BOOTSTRAP_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 export const USE_OFFCHAIN = false; // Set to false to enable the secure on-chain flow
 export const CHUNK_SIZE = 900;
