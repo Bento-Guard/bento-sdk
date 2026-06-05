@@ -20,9 +20,14 @@ export class BentoGuardClient {
   private constructor(config?: BentoGuardConfig) {
     this.config = config || this.loadConfigFromEnv();
 
-    const baseUrl =
-      this.config.endpoint ||
-      BENTO_GUARD_DEFAULT_URL;
+    const baseUrl = this.config.endpoint || BENTO_GUARD_DEFAULT_URL;
+
+    if (!baseUrl) {
+      throw new BentoError(
+        BentoErrorCode.INVALID_CONFIG,
+        "Bento endpoint is not configured. Set BENTO_ENDPOINT in environment or pass endpoint in config.",
+      );
+    }
 
     this.api = new ApiClient(baseUrl, this.config.timeout);
   }
@@ -30,15 +35,16 @@ export class BentoGuardClient {
   /**
    * Initializes the SDK with configuration.
    */
-  public static initialize(config?: BentoGuardConfig): BentoGuardClient {
+  public static initialize(
+    config?: BentoGuardConfig,
+    options?: { forceReinit?: boolean },
+  ): BentoGuardClient {
     if (!BentoGuardClient.instance) {
       BentoGuardClient.instance = new BentoGuardClient(config);
-    } else if (config) {
+    } else if (config && options?.forceReinit) {
       // Allow re-initialization with new config if explicitly provided
       BentoGuardClient.instance.config = config;
-      const baseUrl =
-        config.endpoint ||
-        BENTO_GUARD_DEFAULT_URL;
+      const baseUrl = config.endpoint || BENTO_GUARD_DEFAULT_URL;
       BentoGuardClient.instance.api = new ApiClient(baseUrl, config.timeout);
     }
     return BentoGuardClient.instance;
