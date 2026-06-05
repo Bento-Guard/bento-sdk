@@ -129,7 +129,7 @@ export class BentoGuardClient {
   ): Promise<boolean> {
     const agentAddress = this.getAgentAddress(options);
     try {
-      const result = await this.api.checkRegistration(agentAddress);
+      const result = await this.api.checkRegistration(agentAddress, options?.timeout);
       return result?.registered === true || result === true;
     } catch (error: any) {
       if (
@@ -146,8 +146,8 @@ export class BentoGuardClient {
   /**
    * Fetches the current status of an escalated action.
    */
-  public async getActionStatus(actionId: string): Promise<any> {
-    return this.api.getActionStatus(actionId);
+  public async getActionStatus(actionId: string, options?: BentoProtectOptions): Promise<any> {
+    return this.api.getActionStatus(actionId, options?.timeout);
   }
 
   /**

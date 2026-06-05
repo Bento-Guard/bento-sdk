@@ -63,10 +63,11 @@ export class ApiClient {
     }
   }
 
-  public async getActionStatus(actionId: string): Promise<any> {
+  public async getActionStatus(actionId: string, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.get(
         `/api/v1/actions/${actionId}`,
+        timeout ? { timeout } : undefined,
       );
       return response.data.data;
     } catch (error: any) {
@@ -74,10 +75,11 @@ export class ApiClient {
     }
   }
 
-  public async checkRegistration(agentAddress: string): Promise<any> {
+  public async checkRegistration(agentAddress: string, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.get(
         `/api/v1/agents/check-registration?agentAddress=${agentAddress}`,
+        timeout ? { timeout } : undefined,
       );
       return response.data?.data ?? response.data;
     } catch (error: any) {
@@ -85,29 +87,30 @@ export class ApiClient {
     }
   }
 
-  public async getRelayerInfo(): Promise<any> {
+  public async getRelayerInfo(timeout?: number): Promise<any> {
     try {
-      const response = await this.axiosInstance.get("/api/v1/system/relayer");
+      const response = await this.axiosInstance.get("/api/v1/system/relayer", timeout ? { timeout } : undefined);
       return response.data?.data ?? response.data;
     } catch (error: any) {
       throw BentoError.fromError(error);
     }
   }
 
-  public async getOnchainConfig(): Promise<any> {
+  public async getOnchainConfig(timeout?: number): Promise<any> {
     try {
-      const response = await this.axiosInstance.get("/api/v1/system/config");
+      const response = await this.axiosInstance.get("/api/v1/system/config", timeout ? { timeout } : undefined);
       return response.data?.data ?? response.data;
     } catch (error: any) {
       throw BentoError.fromError(error);
     }
   }
 
-  public async buildInit(data: any): Promise<any> {
+  public async buildInit(data: any, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.post(
         "/api/v1/actions/onchain/build-init",
         data,
+        timeout ? { timeout } : undefined,
       );
       return response.data?.data ?? response.data;
     } catch (error: any) {
@@ -115,11 +118,12 @@ export class ApiClient {
     }
   }
 
-  public async initAction(data: any): Promise<any> {
+  public async initAction(data: any, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.post(
         "/api/v1/actions/onchain/init",
         data,
+        timeout ? { timeout } : undefined,
       );
       return response.data?.data ?? response.data;
     } catch (error: any) {
@@ -127,11 +131,12 @@ export class ApiClient {
     }
   }
 
-  public async buildAppend(data: any): Promise<any> {
+  public async buildAppend(data: any, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.post(
         "/api/v1/actions/onchain/build-append",
         data,
+        timeout ? { timeout } : undefined,
       );
       return response.data?.data ?? response.data;
     } catch (error: any) {
@@ -139,11 +144,12 @@ export class ApiClient {
     }
   }
 
-  public async appendPayload(data: any): Promise<any> {
+  public async appendPayload(data: any, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.post(
         "/api/v1/actions/onchain/append-payload",
         data,
+        timeout ? { timeout } : undefined,
       );
       return response.data?.data ?? response.data;
     } catch (error: any) {
@@ -151,11 +157,12 @@ export class ApiClient {
     }
   }
 
-  public async buildAppendAndFinalize(data: any): Promise<any> {
+  public async buildAppendAndFinalize(data: any, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.post(
         "/api/v1/actions/onchain/build-append-and-finalize",
         data,
+        timeout ? { timeout } : undefined,
       );
       return response.data?.data ?? response.data;
     } catch (error: any) {
@@ -163,11 +170,12 @@ export class ApiClient {
     }
   }
 
-  public async appendAndFinalize(data: any): Promise<any> {
+  public async appendAndFinalize(data: any, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.post(
         "/api/v1/actions/onchain/append-and-finalize",
         data,
+        timeout ? { timeout } : undefined,
       );
       return response.data?.data ?? response.data;
     } catch (error: any) {

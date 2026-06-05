@@ -15,12 +15,12 @@ let _bootstrapCache: {
   ts: number;
 } | null = null;
 
-async function getBootstrapConfig(client: BentoGuardClient) {
+async function getBootstrapConfig(client: BentoGuardClient, timeout?: number) {
   if (_bootstrapCache && Date.now() - _bootstrapCache.ts < BOOTSTRAP_TTL_MS) {
     return _bootstrapCache;
   }
-  const relayerInfo = await client.api.getRelayerInfo();
-  const onchainConfig = await client.api.getOnchainConfig();
+  const relayerInfo = await client.api.getRelayerInfo(timeout);
+  const onchainConfig = await client.api.getOnchainConfig(timeout);
   _bootstrapCache = { relayerInfo, onchainConfig, ts: Date.now() };
   return _bootstrapCache;
 }
@@ -40,7 +40,7 @@ export async function onchainProtect(
         "🔗 Fetching relayer and config bootstrap data from backend...",
       );
     }
-    const { relayerInfo, onchainConfig } = await getBootstrapConfig(client);
+    const { relayerInfo, onchainConfig } = await getBootstrapConfig(client, options?.timeout);
 
     const relayerPublicKey = new Uint8Array(
       onchainConfig.relayer_encryption_key,
@@ -78,7 +78,7 @@ export async function onchainProtect(
       target_program: targetProgram,
       value: "0",
       total_data_len: totalDataLen,
-    });
+    }, options?.timeout);
 
     // Deserialize and co-sign using AGENT_PRIVATE_KEY
     const initTxBytes = Buffer.from(buildInitRes.transaction, "base64");
@@ -97,7 +97,7 @@ export async function onchainProtect(
       value: "0",
       total_data_len: totalDataLen,
       signed_transaction: signedInitTxBase64,
-    });
+    }, options?.timeout);
 
     // (Optional logging or parsing of actionPdaStr can remain if needed)
 
@@ -120,7 +120,7 @@ export async function onchainProtect(
           action_id: actionId,
           offset,
           chunk: chunkBase64,
-        });
+        }, options?.timeout);
 
         const appendTxBytes = Buffer.from(buildAppendRes.transaction, "base64");
         const appendVtx = VersionedTransaction.deserialize(appendTxBytes);
@@ -136,7 +136,7 @@ export async function onchainProtect(
           offset,
           chunk_len: chunkLen,
           signed_transaction: signedAppendTxBase64,
-        });
+        }, options?.timeout);
       } else {
         // Build append-and-finalize transaction
         const buildAppFinRes = await client.api.buildAppendAndFinalize({
@@ -145,7 +145,7 @@ export async function onchainProtect(
           offset,
           chunk: chunkBase64,
           commitment_hash: Array.from(commitmentHash),
-        });
+        }, options?.timeout);
 
         const appFinTxBytes = Buffer.from(buildAppFinRes.transaction, "base64");
         const appFinVtx = VersionedTransaction.deserialize(appFinTxBytes);
@@ -162,7 +162,7 @@ export async function onchainProtect(
           chunk_len: chunkLen,
           signed_transaction: signedAppFinTxBase64,
           trigger_verdict: true,
-        });
+        }, options?.timeout);
       }
 
       offset += chunkLen;
@@ -220,7 +220,7 @@ export async function onchainProtect(
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
         try {
-          const status = await client.api.getActionStatus(actionId);
+          const status = await client.api.getActionStatus(actionId, options?.timeout);
           if (status.final_decision === "ALLOW") {
             return {
               ...result,

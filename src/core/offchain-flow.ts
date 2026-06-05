@@ -16,8 +16,8 @@ export async function offchainProtect(
     const agentKeypair = client.getAgentKeypair();
     const agentAddress = agentKeypair.publicKey.toBase58();
 
-    const relayerInfo = await client.api.getRelayerInfo();
-    const onchainConfig = await client.api.getOnchainConfig();
+    const relayerInfo = await client.api.getRelayerInfo(options?.timeout);
+    const onchainConfig = await client.api.getOnchainConfig(options?.timeout);
     const relayerPublicKey = new Uint8Array(
       onchainConfig.relayer_encryption_key,
     );
@@ -54,7 +54,7 @@ export async function offchainProtect(
       encrypted_payload: encryptedPayloadB64,
       signature: validSignature,
       base64_tx: base64Tx,
-    });
+    }, options?.timeout);
 
     if (result.recommendation === "BLOCKED") {
       throw new BentoError(
@@ -81,7 +81,7 @@ export async function offchainProtect(
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
         try {
-          const status = await client.api.getActionStatus(result.actionId);
+          const status = await client.api.getActionStatus(result.actionId, options?.timeout);
           if (status.final_decision === "ALLOW") {
             return {
               ...result,
