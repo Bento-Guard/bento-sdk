@@ -24,16 +24,24 @@ If you used `npx bentoguard` to set up this sample, your `.env` is already confi
 - `BENTO_NETWORK`: `solana` (default).
 
 ### Step 3: Launch the Agent
-Run the following command to start chatting with your Agent:
+There are two ways to run the Bento Guard Finance Agent:
+
+#### Option A: Interactive Chat Mode (Default)
+Run the following command to start chatting with your Agent in real-time:
 ```bash
 npm start
 ```
 
-## 🛠 Agent Commands
-
-- **Free Chat**: Request actions like transfers or balance checks (e.g., "Transfer 0.5 SOL to 8x...").
-- **`/demo`**: Run 5 real-world security scenarios to see how Bento Guard prevents dangerous transactions.
+**Available Chat Commands:**
+- **Free Chat**: Type any intent like "Transfer 0.5 SOL to 8x...".
+- **`/demo`**: Run 5 predefined security scenarios to see how Bento Guard works.
 - **`/exit`**: Terminate the session.
+
+#### Option B: Automatic Demo Mode
+If you just want to run the 5 predefined security scenarios automatically without entering the interactive chat, use this command:
+```bash
+APP_MODE=DEMO npm start
+```
 
 ## 📚 Project Structure
 

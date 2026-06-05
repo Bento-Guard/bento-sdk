@@ -82,6 +82,16 @@ export async function onchainProtect(
     const initVtx = VersionedTransaction.deserialize(initTxBytes);
     initVtx.sign([agentKeypair]); // Local private key signature (Safe!)
 
+    const signedInitTxBase64 = Buffer.from(initVtx.serialize()).toString("base64");
+    await client.api.initAction({
+      agent_public_addr: agentAddress,
+      action_id: actionId,
+      target_program: targetProgram,
+      value: "0",
+      total_data_len: totalDataLen,
+      signed_transaction: signedInitTxBase64,
+    }, options?.timeout);
+
     const payloadBuffer = Buffer.from(encrypted.payload);
 
     let offset = 0;

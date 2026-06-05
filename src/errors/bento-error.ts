@@ -43,7 +43,8 @@ export class BentoError extends Error {
     }
 
     if (error.response?.status === 400) {
-      const msg: string = error.response?.data?.message ?? "";
+      const rawMsg = error.response?.data?.message ?? "";
+      const msg: string = Array.isArray(rawMsg) ? rawMsg.join(", ") : String(rawMsg);
       if (
         msg.toLowerCase().includes("threat") ||
         msg.toLowerCase().includes("high risk") ||

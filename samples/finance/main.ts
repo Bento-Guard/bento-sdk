@@ -31,17 +31,7 @@ const askQuestion = (query: string) =>
   new Promise<string>((resolve) => rl.question(query, resolve));
 
 async function protectIntent(intent: string) {
-  const txDraft = generateUnsignedTransactionDraft();
-
-  section("Transaction Build");
-  label("Input intent", intent, color.yellow);
-  label("Fee payer", txDraft.feePayer, color.cyan);
-  label("Recipient", txDraft.recipient, color.cyan);
-  label("Program", txDraft.programId, color.magenta);
-  label("Blockhash", txDraft.recentBlockhash, color.dim);
-  label("Unsigned tx", `${txDraft.rawTx.substring(0, 36)}...`, color.dim);
-  label("Network", process.env.BENTO_NETWORK || "solana", color.cyan);
-  await sleep(500);
+  console.log(`\n${paint("Input intent:", color.yellow)} ${intent}`);
 
   console.log("");
   console.log(badge(" PROTECTING VIA BENTO GUARD ", color.white, color.bgBlue));

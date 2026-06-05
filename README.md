@@ -145,17 +145,14 @@ async function executeSecureAgentAction() {
   // 1. AGENT PLANNING PHASE
   const instruction = "Send 10 SOL to recipient address 2cSiFhzwbymqr5aTiFacbidJNZ5vNK7Zdb9osbdfcKwG";
   
-  // 2. SIGNING THE INSTRUCTION
-  // Generate the Ed25519 signature of the instruction using the Agent's private key
-  const messageBytes = new TextEncoder().encode(instruction);
-  const signatureBytes = nacl.sign.detached(messageBytes, agentKeypair.secretKey);
-  const signature = bs58.encode(signatureBytes);
+  // 2. SIGNING IS HANDLED INTERNALLY
+  // The Bento SDK automatically signs the verification payload using your configured AGENT_WALLET_PRIVATE_KEY.
 
   try {
     console.log("🛡️ Forwarding to Bento Guard Firewall...");
     
-    // 3. CALL THE GUARD: protect(instruction, signature, options)
-    const audit = await protect(instruction, signature, {
+    // 3. CALL THE GUARD: protect(instruction, options)
+    const audit = await protect(instruction, {
       agentAddress: agentKeypair.publicKey.toBase58(),
       // Default is true. Set to false if your app wants to return ESCALATED
       // immediately and handle dashboard/deep-link approval itself.
@@ -194,6 +191,8 @@ executeSecureAgentAction().catch(console.error);
 
 ## 🧪 Safe Demo & Devnet Testing
 
+Currently, the system is running on **Devnet**. All transactions are sponsored/paid by the Relayer fee. The user only needs to sign to create a signature for the action.
+
 If you are just exploring the concept with a **burner wallet (no funds)**, use the `testnet` environment (which defaults to the production backend). You can also explicitly verify registration to avoid cryptic errors.
 
 ```typescript
@@ -224,7 +223,7 @@ async function safeDemo() {
   const instruction = "Swap 1 USDC for SOL on Jupiter.";
   
   try {
-    const result = await protect(instruction, signature, { agentAddress });
+    const result = await protect(instruction, { agentAddress });
     console.log("Bento Verdict:", result.recommendation);
   } catch (e: any) {
     console.error("Error:", e.message);

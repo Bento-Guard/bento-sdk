@@ -8,9 +8,6 @@ function assertProtectInput(input: ProtectInput) {
   if (!input.instruction?.trim()) {
     throw new Error("Invalid protect input: instruction is required.");
   }
-
-  // SDK expects Base64 raw transaction string.
-
 }
 
 /**
