@@ -65,9 +65,8 @@ export async function offchainProtect(
     }
 
     if (result.recommendation === "ESCALATED") {
-      console.warn(
-        `[BENTO WARNING] Action escalated for review: ${result.reasoning}`,
-      );
+      console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
+      if (result.reviewUrl) console.warn(`👀 Review URL: ${result.reviewUrl}`);
 
       if (options?.autoPollEscalation === false || !result.actionId) {
         return result;

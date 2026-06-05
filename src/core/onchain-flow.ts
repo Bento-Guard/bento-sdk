@@ -63,11 +63,8 @@ export async function onchainProtect(
     const commitmentHash = commitmentHashAsArray(plaintext);
     const totalDataLen = encrypted.payload.length;
 
-    // Generate a unique monotonic action id
-    const actionId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    // Generate a unique monotonic action id (must be a valid u64 integer string for on-chain program)
+    const actionId = Date.now().toString() + Math.floor(Math.random() * 100000).toString().padStart(5, '0');
 
     const targetProgram = relayerInfo.program_id; // Default to Bento program ID for tracking
 
@@ -84,22 +81,6 @@ export async function onchainProtect(
     const initTxBytes = Buffer.from(buildInitRes.transaction, "base64");
     const initVtx = VersionedTransaction.deserialize(initTxBytes);
     initVtx.sign([agentKeypair]); // Local private key signature (Safe!)
-
-    const signedInitTxBase64 = Buffer.from(initVtx.serialize()).toString(
-      "base64",
-    );
-
-    const initActionRes = await client.api.initAction({
-      agent_public_addr: agentAddress,
-      owner_pubkey: undefined, // Let Backend auto-resolve user owner pubkey from DB
-      action_id: actionId,
-      target_program: targetProgram,
-      value: "0",
-      total_data_len: totalDataLen,
-      signed_transaction: signedInitTxBase64,
-    }, options?.timeout);
-
-    // (Optional logging or parsing of actionPdaStr can remain if needed)
 
     const payloadBuffer = Buffer.from(encrypted.payload);
 
@@ -187,9 +168,9 @@ export async function onchainProtect(
       riskScore: verdict.raw_score / 100000, // Normalize to 0-1 range
       reasoning: verdict.reasoning,
       actionId: actionId,
-      approveUrl: verdict.approve_url,
-      blockUrl: verdict.block_url,
-      reviewUrl: verdict.review_url,
+      approveUrl: verdict.approveUrl || verdict.approve_url,
+      blockUrl: verdict.blockUrl || verdict.block_url,
+      reviewUrl: verdict.reviewUrl || verdict.review_url,
     };
 
     // 6. Firewall and Human-in-the-Loop Polling if Escalated
@@ -203,9 +184,10 @@ export async function onchainProtect(
 
     if (result.recommendation === "ESCALATED") {
       if (!options?.silent) {
-        console.warn(
-          `[BENTO WARNING] Action escalated for review: ${result.reasoning}`,
-        );
+        console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
+        if (result.reviewUrl) console.warn(`👀 Review URL: ${result.reviewUrl}`);
+        if (result.approveUrl) console.warn(`✅ Approve URL: ${result.approveUrl}`);
+        if (result.blockUrl) console.warn(`🛑 Block URL: ${result.blockUrl}`);
       }
 
       if (options?.autoPollEscalation === false) {
