@@ -187,6 +187,9 @@ export async function onchainProtect(
       riskScore: verdict.raw_score / 100000, // Normalize to 0-1 range
       reasoning: verdict.reasoning,
       actionId: actionId,
+      approveUrl: verdict.approve_url,
+      blockUrl: verdict.block_url,
+      reviewUrl: verdict.review_url,
     };
 
     // 6. Firewall and Human-in-the-Loop Polling if Escalated

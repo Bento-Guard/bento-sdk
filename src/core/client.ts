@@ -81,6 +81,9 @@ export class BentoGuardClient {
     return config;
   }
 
+  /**
+   * Helper method to get agent private key
+   */
   public getAgentKeypair(): Keypair {
     const key = this.config.agentWalletPrivateKey;
     if (!key) {
@@ -105,6 +108,9 @@ export class BentoGuardClient {
     }
   }
 
+  /**
+   * Helper method to get agent address
+   */
   public getAgentAddress(options?: BentoProtectOptions): string {
     if (options?.agentAddress) {
       return options.agentAddress;

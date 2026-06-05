@@ -11,8 +11,8 @@ export class ApiClient {
       timeout ??
       Number(
         process.env.BENTO_PROTECT_TIMEOUT_MS ||
-          process.env.BENTO_TIMEOUT_MS ||
-          DEFAULT_TIMEOUT,
+        process.env.BENTO_TIMEOUT_MS ||
+        DEFAULT_TIMEOUT,
       );
 
     this.axiosInstance = axios.create({
@@ -53,9 +53,11 @@ export class ApiClient {
       const serverMessage =
         serverData?.message || serverData?.error?.message || error.message;
 
-      console.error(
-        `[SDK] POST ERROR: ${serverMessage} (Status: ${status || "N/A"})`,
-      );
+      if (process.env.BENTO_DEBUG === "true") {
+        console.error(
+          `[SDK] POST ERROR: ${serverMessage} (Status: ${status || "N/A"})`,
+        );
+      }
 
       throw BentoError.fromError(error);
     }
