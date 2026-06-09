@@ -73,7 +73,7 @@ describe('BentoGuardClient', () => {
     const result = await client.protect('send 100 sol to some address');
 
     expect(result.recommendation).toBe('ALLOW');
-    expect(result.riskScore).toBe(0.5);
+    expect(result.riskScore).toBe(50);
     expect(mockApiClientInstance.appendAndFinalize).toHaveBeenCalled();
   });
 
