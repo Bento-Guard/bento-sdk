@@ -21,7 +21,6 @@ npm install
 If you used `npx bentoguard` to set up this sample, your `.env` is already configured. Otherwise, ensure the following keys are present in your `.env` file:
 - `GEMINI_API_KEY`: Your API Key from Google AI Studio.
 - `AGENT_WALLET_PRIVATE_KEY`: Your Solana wallet private key (must be registered on the Bento Dashboard).
-- `BENTO_NETWORK`: `solana` (default).
 
 ### Step 3: Launch the Agent
 There are two ways to run the Bento Guard Finance Agent:
