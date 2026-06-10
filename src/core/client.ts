@@ -42,10 +42,10 @@ export class BentoGuardClient {
     if (!BentoGuardClient.instance) {
       BentoGuardClient.instance = new BentoGuardClient(config);
     } else if (config && options?.forceReinit) {
-      // Allow re-initialization with new config if explicitly provided
-      BentoGuardClient.instance.config = config;
-      const baseUrl = config.endpoint || BENTO_GUARD_DEFAULT_URL;
-      BentoGuardClient.instance.api = new ApiClient(baseUrl, config.timeout);
+      // Re-initialize the instance completely rather than mutating the existing one.
+      // This prevents hot-swap race conditions because existing asynchronous
+      // operations holding the old instance reference will safely complete.
+      BentoGuardClient.instance = new BentoGuardClient(config);
     }
     return BentoGuardClient.instance;
   }
