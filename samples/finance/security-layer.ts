@@ -27,7 +27,8 @@ export async function secureExecute(
   // 2. CALL THE GUARD: The main protection point
   return await protect(input.instruction, {
     timeout: Number(process.env.BENTO_PROTECT_TIMEOUT_MS || 15000),
-    autoPollEscalation: process.env.BENTO_AUTO_POLL_ESCALATION !== "false",
+    autoPollEscalation: false,
+    silent: true,
   });
 }
 
