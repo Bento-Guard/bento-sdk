@@ -1,6 +1,6 @@
 {
   "name": "@bentoguard/sdk",
-  "version": "1.2.8",
+  "version": "v1.2.9-rc.1",
   "description": "Bento Guard SDK - AI-powered security infrastructure for autonomous agents",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
