@@ -9,8 +9,11 @@ export const NONCE_LENGTH = 12;
 export interface EncryptForRelayerParams {
   plaintext: Uint8Array;
   relayerPublicKey: Uint8Array;
-  ephemeralSecretKey?: Uint8Array;
-  nonce?: Uint8Array;
+}
+
+export interface EncryptForRelayerDeterministicParams extends EncryptForRelayerParams {
+  ephemeralSecretKey: Uint8Array;
+  nonce: Uint8Array;
 }
 
 export interface EncryptForRelayerResult {
@@ -20,8 +23,8 @@ export interface EncryptForRelayerResult {
   payload: Uint8Array;
 }
 
-export const encryptForRelayer = (
-  params: EncryptForRelayerParams,
+export const encryptForRelayerDeterministic = (
+  params: EncryptForRelayerDeterministicParams,
 ): EncryptForRelayerResult => {
   if (params.relayerPublicKey.length !== X25519_KEY_LENGTH) {
     throw new Error(
@@ -29,8 +32,7 @@ export const encryptForRelayer = (
     );
   }
 
-  const ephemeralSecretKey =
-    params.ephemeralSecretKey ?? x25519.utils.randomSecretKey();
+  const ephemeralSecretKey = params.ephemeralSecretKey;
   const ephemeralPublicKey = x25519.getPublicKey(ephemeralSecretKey);
 
   const sharedSecret = x25519.getSharedSecret(
@@ -38,7 +40,7 @@ export const encryptForRelayer = (
     params.relayerPublicKey,
   );
 
-  const nonce = params.nonce ?? randomBytes(NONCE_LENGTH);
+  const nonce = params.nonce;
   if (nonce.length !== NONCE_LENGTH) {
     throw new Error(`nonce must be ${NONCE_LENGTH} bytes, got ${nonce.length}`);
   }
@@ -55,6 +57,16 @@ export const encryptForRelayer = (
   payload.set(ciphertext, ephemeralPublicKey.length + nonce.length);
 
   return { ciphertext, ephemeralPublicKey, nonce, payload };
+};
+
+export const encryptForRelayer = (
+  params: EncryptForRelayerParams,
+): EncryptForRelayerResult => {
+  return encryptForRelayerDeterministic({
+    ...params,
+    ephemeralSecretKey: x25519.utils.randomSecretKey(),
+    nonce: randomBytes(NONCE_LENGTH),
+  });
 };
 
 export const commitmentHash = (plaintext: Uint8Array): Uint8Array =>

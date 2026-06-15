@@ -73,8 +73,7 @@ async function handleAnalysisResult(analysis: any) {
       return;
     }
 
-    label("Action ID", analysis.actionId, color.cyan);
-    await resolveEscalation(analysis.actionId);
+    await resolveEscalation(analysis);
     return;
   }
 
@@ -93,13 +92,20 @@ function printReasoning(
   }
 }
 
-async function resolveEscalation(actionId: string) {
+async function resolveEscalation(analysis: any) {
+  const actionId = analysis.actionId;
   console.log("");
-  label("Review mode", "Dashboard polling", color.yellow);
-  label("Action ID", actionId, color.cyan);
+  console.log(badge(" WAITING FOR APPROVAL ", color.black, color.bgYellow));
+  console.log("");
+  
+  if (analysis.reviewUrl) console.log(`👀 Review URL:  ${paint(analysis.reviewUrl, color.cyan)}`);
+  if (analysis.approveUrl) console.log(`✅ Approve URL: ${paint(analysis.approveUrl, color.green)}`);
+  if (analysis.blockUrl) console.log(`🛑 Block URL:   ${paint(analysis.blockUrl, color.red)}`);
+
+  console.log("");
   console.log(
     paint(
-      "Approve or block this action from the Bento dashboard or its deep link.",
+      "Please approve or block this action using the links above or from the Bento Dashboard.",
       color.dim,
     ),
   );

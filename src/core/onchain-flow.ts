@@ -175,12 +175,13 @@ export async function onchainProtect(
           : verdict.decision === "Escalated"
             ? "ESCALATED"
             : "BLOCKED",
-      riskScore: verdict.raw_score / 100000, // Normalize to 0-1 range
+      riskScore: verdict.raw_score / 1000, // Normalize to 0-100 range
       reasoning: verdict.reasoning,
       actionId: actionId,
       approveUrl: verdict.approveUrl || verdict.approve_url,
       blockUrl: verdict.blockUrl || verdict.block_url,
       reviewUrl: verdict.reviewUrl || verdict.review_url,
+      usage: verdict.usage,
     };
 
     // 6. Firewall and Human-in-the-Loop Polling if Escalated

@@ -36,4 +36,5 @@ export interface AnalysisResult {
     aiAnalysis?: string;
     policyViolations?: string[];
   };
+  usage?: any;
 }
