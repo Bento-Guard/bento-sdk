@@ -36,13 +36,13 @@ export async function verifyRegistration(
 }
 
 /**
- * Fetches the current status of an escalated action.
+ * Streams the current status of an escalated action until a decision is made.
  *
  * @param actionId - The unique ID of the action.
  * @param options - Optional configuration overrides.
- * @returns The current status of the action.
+ * @returns The final status of the action.
  */
-export async function getActionStatus(
+export async function streamActionStatus(
   actionId: string,
   options?: BentoProtectOptions,
 ): Promise<any> {
@@ -50,7 +50,7 @@ export async function getActionStatus(
     BentoGuardClient.initialize();
   }
   const client = BentoGuardClient.getInstance();
-  return client.getActionStatus(actionId, options);
+  return client.streamActionStatus(actionId, options);
 }
 
 // Export the main client and its alias

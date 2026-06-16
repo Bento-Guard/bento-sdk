@@ -28,7 +28,6 @@ export const BENTO_GUARD_DEFAULT_URL =
   NETWORK_CONFIG[BentoNetwork.TESTNET].endpoint;
 
 export const DEFAULT_TIMEOUT = 2 * 60 * 1000; // 2 minutes
-export const POLL_INTERVAL_MS = 3 * 1000;          // 3 seconds
 export const POLL_TIMEOUT_MS = 5 * 60 * 1000;  // 5 minutes
 export const BOOTSTRAP_TTL_MS = 5 * 60 * 1000; // 5 minutes
 

@@ -144,10 +144,10 @@ export class BentoGuardClient {
   }
 
   /**
-   * Fetches the current status of an escalated action.
+   * Streams the current status of an escalated action until a final decision is made.
    */
-  public async getActionStatus(actionId: string, options?: BentoProtectOptions): Promise<any> {
-    return this.api.getActionStatus(actionId, options?.timeout);
+  public async streamActionStatus(actionId: string, options?: BentoProtectOptions): Promise<any> {
+    return this.api.streamActionStatus(actionId, options?.timeout);
   }
 
   /**

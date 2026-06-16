@@ -1,5 +1,5 @@
 import { BentoProtectOptions, AnalysisResult } from "../types";
-import { POLL_INTERVAL_MS, POLL_TIMEOUT_MS } from "../constants";
+import { POLL_TIMEOUT_MS } from "../constants";
 import { BentoError, BentoErrorCode } from "../errors/bento-error";
 import { encodeActionPayload } from "../utils/borsh-helper";
 import { encryptForRelayer } from "../utils/crypto-helper";
@@ -72,40 +72,30 @@ export async function offchainProtect(
         return result;
       }
 
-      const pollInterval = POLL_INTERVAL_MS;
       const pollTimeout = POLL_TIMEOUT_MS;
-      const startTime = Date.now();
 
-      while (Date.now() - startTime < pollTimeout) {
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
-
-        try {
-          const status = await client.api.getActionStatus(result.actionId, options?.timeout);
-          if (status.final_decision === "ALLOW") {
-            return {
-              ...result,
-              recommendation: "ALLOW",
-              reasoning: `Approved by owner: ${status.reason || ""}`,
-            };
-          } else if (status.final_decision === "BLOCKED") {
-            throw new BentoError(
-              BentoErrorCode.HIGH_RISK_DETECTED,
-              `Action blocked by owner: ${status.reason || ""}`,
-              status,
-            );
-          }
-        } catch (err: any) {
-          if (err instanceof BentoError) throw err;
-          console.warn(
-            `[BENTO WARNING] Error during action status polling: ${err.message}`,
+      try {
+        const status = await client.api.streamActionStatus(result.actionId, pollTimeout);
+        if (status.final_decision === "ALLOW") {
+          return {
+            ...result,
+            recommendation: "ALLOW",
+            reasoning: `Approved by owner: ${status.reason || ""}`,
+          };
+        } else if (status.final_decision === "BLOCKED") {
+          throw new BentoError(
+            BentoErrorCode.HIGH_RISK_DETECTED,
+            `Action blocked by owner: ${status.reason || ""}`,
+            status,
           );
         }
+      } catch (err: any) {
+        if (err instanceof BentoError) throw err;
+        throw new BentoError(
+          BentoErrorCode.HIGH_RISK_DETECTED,
+          `Escalated action review timed out or failed: ${err.message}`,
+        );
       }
-
-      throw new BentoError(
-        BentoErrorCode.HIGH_RISK_DETECTED,
-        `Escalated action review timed out after ${pollTimeout / 1000}s waiting for owner approval.`,
-      );
     }
 
     return result;

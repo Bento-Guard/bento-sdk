@@ -63,18 +63,6 @@ export class ApiClient {
     }
   }
 
-  public async getActionStatus(actionId: string, timeout?: number): Promise<any> {
-    try {
-      const response = await this.axiosInstance.get(
-        `/api/v1/actions/${actionId}`,
-        timeout ? { timeout } : undefined,
-      );
-      return response.data.data;
-    } catch (error: any) {
-      throw BentoError.fromError(error);
-    }
-  }
-
   public async checkRegistration(agentAddress: string, timeout?: number): Promise<any> {
     try {
       const response = await this.axiosInstance.get(
@@ -181,5 +169,47 @@ export class ApiClient {
     } catch (error: any) {
       throw BentoError.fromError(error);
     }
+  }
+
+  public streamActionStatus(actionId: string, timeoutMs: number = 300000): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort(new Error(`Stream timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      this.axiosInstance.get(`/api/v1/actions/stream/${actionId}`, {
+        responseType: "stream",
+        signal: controller.signal,
+      }).then(response => {
+        const stream = response.data;
+        stream.on("data", (chunk: any) => {
+          const lines = chunk.toString().split("\\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.final_decision && data.final_decision !== "ESCALATED") {
+                  clearTimeout(timeoutId);
+                  stream.destroy();
+                  resolve(data);
+                }
+              } catch (e) {}
+            }
+          }
+        });
+        stream.on("error", (err: any) => {
+          clearTimeout(timeoutId);
+          reject(err);
+        });
+        stream.on("end", () => {
+          clearTimeout(timeoutId);
+          reject(new Error("Stream closed unexpectedly"));
+        });
+      }).catch(err => {
+        clearTimeout(timeoutId);
+        reject(BentoError.fromError(err));
+      });
+    });
   }
 }
