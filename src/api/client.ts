@@ -181,20 +181,23 @@ export class ApiClient {
       this.axiosInstance.get(`/api/v1/actions/stream/${actionId}`, {
         responseType: "stream",
         signal: controller.signal,
+        timeout: 0,
       }).then(response => {
         const stream = response.data;
         stream.on("data", (chunk: any) => {
-          const lines = chunk.toString().split("\\n");
+          const chunkStr = chunk.toString();
+          const lines = chunkStr.split("\n");
           for (const line of lines) {
             if (line.startsWith("data: ")) {
               try {
-                const data = JSON.parse(line.slice(6));
-                if (data.final_decision && data.final_decision !== "ESCALATED") {
+                const parsed = JSON.parse(line.slice(6));
+                const payload = parsed.data || parsed;
+                if (payload.final_decision && payload.final_decision !== "ESCALATED") {
                   clearTimeout(timeoutId);
                   stream.destroy();
-                  resolve(data);
+                  resolve(payload);
                 }
-              } catch (e) {}
+              } catch (e) { }
             }
           }
         });
