@@ -164,7 +164,20 @@ export async function onchainProtect(
     }
 
     const pollTimeout = options?.pollTimeoutMs || POLL_TIMEOUT_MS;
-    const status = await client.api.streamActionStatus(actionId, pollTimeout);
+    
+    // Define escalated handler
+    const onEscalated = (payload: any) => {
+      if (!options?.silent) {
+        console.warn(`[BENTO WARNING] Action escalated for review: ${payload.reason || ""}`);
+        if (payload.reviewUrl) console.warn(`👀 Review URL: ${payload.reviewUrl}`);
+        if (payload.approveUrl) console.warn(`✅ Approve URL: ${payload.approveUrl}`);
+        if (payload.blockUrl) console.warn(`🛑 Block URL: ${payload.blockUrl}`);
+      }
+      if (options?.autoPollEscalation === false) return false;
+      return true;
+    };
+
+    const status = await client.api.streamActionStatus(actionId, pollTimeout, onEscalated);
 
     const decision = status.final_decision;
     const result: AnalysisResult = {
@@ -182,10 +195,10 @@ export async function onchainProtect(
       );
     }
 
+    // Note: Since streamActionStatus waits for ALLOW/BLOCKED, 
+    // it will never return ESCALATED here. The ESCALATED logic is handled by onEscalated callback.
+    // If autoPollEscalation is disabled (which we haven't implemented yet in the new flow), it might.
     if (result.recommendation === "ESCALATED") {
-      if (!options?.silent) {
-        console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
-      }
       return result;
     }
 

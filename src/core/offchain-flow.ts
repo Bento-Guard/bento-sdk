@@ -90,10 +90,10 @@ export async function offchainProtect(
       );
     }
 
+    // Note: Since streamActionStatus waits for ALLOW/BLOCKED, 
+    // it will never return ESCALATED here. The ESCALATED logic is handled by onEscalated callback.
+    // If autoPollEscalation is disabled (which we haven't implemented yet in the new flow), it might.
     if (result.recommendation === "ESCALATED") {
-      if (!options?.silent) {
-        console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
-      }
       return result;
     }
 

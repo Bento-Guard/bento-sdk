@@ -171,7 +171,7 @@ export class ApiClient {
     }
   }
 
-  public streamActionStatus(actionId: string, timeoutMs: number = 300000): Promise<any> {
+  public streamActionStatus(actionId: string, timeoutMs: number = 300000, onEscalated?: (payload: any) => boolean | void): Promise<any> {
     return new Promise((resolve, reject) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
@@ -192,7 +192,19 @@ export class ApiClient {
               try {
                 const parsed = JSON.parse(line.slice(6));
                 const payload = parsed.data || parsed;
-                if (payload.final_decision && payload.final_decision !== "ESCALATED") {
+                if (payload.final_decision === "ESCALATED") {
+                  let continuePolling = true;
+                  if (onEscalated) {
+                    const ret = onEscalated(payload);
+                    if (ret === false) continuePolling = false;
+                  }
+                  if (!continuePolling) {
+                    clearTimeout(timeoutId);
+                    stream.destroy();
+                    resolve(payload);
+                  }
+                  // Otherwise we do not resolve yet, we wait for human decision
+                } else if (payload.final_decision) {
                   clearTimeout(timeoutId);
                   stream.destroy();
                   resolve(payload);
