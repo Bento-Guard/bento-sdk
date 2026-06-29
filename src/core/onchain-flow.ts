@@ -159,32 +159,21 @@ export async function onchainProtect(
       offset += chunkLen;
     }
 
-    // 7. Get final verdict details directly
-    const verdict = finalizeRes.verdict;
-    if (!verdict) {
-      throw new BentoError(
-        BentoErrorCode.NETWORK_ERROR,
-        "Workflow executed but failed to retrieve AI/On-chain Verdict from backend.",
-      );
+    if (!options?.silent) {
+      console.log("⏳ Waiting for AI Firewall Security Analysis...");
     }
 
+    const pollTimeout = options?.pollTimeoutMs || POLL_TIMEOUT_MS;
+    const status = await client.api.streamActionStatus(actionId, pollTimeout);
+
+    const decision = status.final_decision;
     const result: AnalysisResult = {
-      recommendation:
-        verdict.decision === "Approved"
-          ? "ALLOW"
-          : verdict.decision === "Escalated"
-            ? "ESCALATED"
-            : "BLOCKED",
-      riskScore: verdict.raw_score / 1000, // Normalize to 0-100 range
-      reasoning: verdict.reasoning,
+      recommendation: decision === "ALLOW" ? "ALLOW" : decision === "ESCALATED" ? "ESCALATED" : "BLOCKED",
+      riskScore: status.final_score || 0,
+      reasoning: status.reason || "",
       actionId: actionId,
-      approveUrl: verdict.approveUrl || verdict.approve_url,
-      blockUrl: verdict.blockUrl || verdict.block_url,
-      reviewUrl: verdict.reviewUrl || verdict.review_url,
-      usage: verdict.usage,
     };
 
-    // 6. Firewall and Human-in-the-Loop Polling if Escalated
     if (result.recommendation === "BLOCKED") {
       throw new BentoError(
         BentoErrorCode.HIGH_RISK_DETECTED,
@@ -196,39 +185,8 @@ export async function onchainProtect(
     if (result.recommendation === "ESCALATED") {
       if (!options?.silent) {
         console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
-        if (result.reviewUrl) console.warn(`👀 Review URL: ${result.reviewUrl}`);
-        if (result.approveUrl) console.warn(`✅ Approve URL: ${result.approveUrl}`);
-        if (result.blockUrl) console.warn(`🛑 Block URL: ${result.blockUrl}`);
       }
-
-      if (options?.autoPollEscalation === false) {
-        return result;
-      }
-
-      const pollTimeout = options?.pollTimeoutMs || POLL_TIMEOUT_MS;
-
-      try {
-        const status = await client.api.streamActionStatus(actionId, pollTimeout);
-        if (status.final_decision === "ALLOW") {
-          return {
-            ...result,
-            recommendation: "ALLOW",
-            reasoning: `Approved by owner: ${status.reason || ""}`,
-          };
-        } else if (status.final_decision === "BLOCKED") {
-          throw new BentoError(
-            BentoErrorCode.HIGH_RISK_DETECTED,
-            `Action blocked by owner: ${status.reason || ""}`,
-            status,
-          );
-        }
-      } catch (err: any) {
-        if (err instanceof BentoError) throw err;
-        throw new BentoError(
-          BentoErrorCode.HIGH_RISK_DETECTED,
-          `Escalated action review timed out or failed: ${err.message}`,
-        );
-      }
+      return result;
     }
 
     return result;

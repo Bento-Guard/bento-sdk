@@ -48,13 +48,39 @@ export async function offchainProtect(
     );
     const validSignature = bs58.encode(signatureBytes);
 
-    const result = await client.api.postTransaction({
+    const postRes = await client.api.postTransaction({
       agent_address: agentAddress,
       wallet_address: agentAddress,
       encrypted_payload: encryptedPayloadB64,
       signature: validSignature,
       base64_tx: base64Tx,
     }, options?.timeout);
+
+    if (!postRes.actionId) {
+      throw new BentoError(
+        BentoErrorCode.NETWORK_ERROR,
+        "Failed to receive actionId from backend",
+      );
+    }
+
+    if (!options?.silent) {
+      console.log("⏳ Waiting for AI Firewall Security Analysis...");
+    }
+
+    // Wait for AI verdict via SSE
+    const pollTimeout = options?.pollTimeoutMs || POLL_TIMEOUT_MS;
+    const status = await client.api.streamActionStatus(postRes.actionId, pollTimeout);
+    
+    // Check if the streamActionStatus payload matches the structure
+    // Since streamActionStatus returns { final_decision, reason, action_data, ... }
+    
+    const decision = status.final_decision;
+    const result: AnalysisResult = {
+      recommendation: decision === "ALLOW" ? "ALLOW" : decision === "ESCALATED" ? "ESCALATED" : "BLOCKED",
+      riskScore: status.final_score || 0,
+      reasoning: status.reason || "",
+      actionId: postRes.actionId,
+    };
 
     if (result.recommendation === "BLOCKED") {
       throw new BentoError(
@@ -65,37 +91,10 @@ export async function offchainProtect(
     }
 
     if (result.recommendation === "ESCALATED") {
-      console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
-      if (result.reviewUrl) console.warn(`👀 Review URL: ${result.reviewUrl}`);
-
-      if (options?.autoPollEscalation === false || !result.actionId) {
-        return result;
+      if (!options?.silent) {
+        console.warn(`[BENTO WARNING] Action escalated for review: ${result.reasoning}`);
       }
-
-      const pollTimeout = POLL_TIMEOUT_MS;
-
-      try {
-        const status = await client.api.streamActionStatus(result.actionId, pollTimeout);
-        if (status.final_decision === "ALLOW") {
-          return {
-            ...result,
-            recommendation: "ALLOW",
-            reasoning: `Approved by owner: ${status.reason || ""}`,
-          };
-        } else if (status.final_decision === "BLOCKED") {
-          throw new BentoError(
-            BentoErrorCode.HIGH_RISK_DETECTED,
-            `Action blocked by owner: ${status.reason || ""}`,
-            status,
-          );
-        }
-      } catch (err: any) {
-        if (err instanceof BentoError) throw err;
-        throw new BentoError(
-          BentoErrorCode.HIGH_RISK_DETECTED,
-          `Escalated action review timed out or failed: ${err.message}`,
-        );
-      }
+      return result;
     }
 
     return result;

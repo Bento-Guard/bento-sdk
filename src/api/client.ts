@@ -33,7 +33,7 @@ export class ApiClient {
       base64_tx: string;
     },
     timeout?: number,
-  ): Promise<AnalysisResult> {
+  ): Promise<any> {
     try {
       const response = await this.axiosInstance.post(
         "/api/v1/transactions",
