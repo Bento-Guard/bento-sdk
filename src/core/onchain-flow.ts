@@ -185,6 +185,9 @@ export async function onchainProtect(
       riskScore: status.final_score || 0,
       reasoning: status.reason || "",
       actionId: actionId,
+      reviewUrl: status.reviewUrl,
+      approveUrl: status.approveUrl,
+      blockUrl: status.blockUrl,
     };
 
     if (result.recommendation === "BLOCKED") {
