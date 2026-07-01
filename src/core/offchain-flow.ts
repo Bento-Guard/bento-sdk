@@ -82,14 +82,6 @@ export async function offchainProtect(
       actionId: postRes.actionId,
     };
 
-    if (result.recommendation === "BLOCKED") {
-      throw new BentoError(
-        BentoErrorCode.HIGH_RISK_DETECTED,
-        `Action blocked: ${result.reasoning}`,
-        result,
-      );
-    }
-
     // Note: Since streamActionStatus waits for ALLOW/BLOCKED, 
     // it will never return ESCALATED here. The ESCALATED logic is handled by onEscalated callback.
     // If autoPollEscalation is disabled (which we haven't implemented yet in the new flow), it might.

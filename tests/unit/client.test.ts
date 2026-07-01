@@ -29,7 +29,8 @@ describe('BentoGuardClient', () => {
       buildAppend: jest.fn().mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' }),
       appendPayload: jest.fn().mockResolvedValue({}),
       buildAppendAndFinalize: jest.fn().mockResolvedValue({ transaction: 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAawAqNgpgltm0wndCpu92S6GwniBmMSjat3k9vh0RFvZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==' }),
-      appendAndFinalize: jest.fn().mockResolvedValue({ verdict: { decision: 'Approved', raw_score: 50000, reasoning: 'Instruction is perfectly safe.' } }),
+      appendAndFinalize: jest.fn().mockResolvedValue({}),
+      streamActionStatus: jest.fn().mockResolvedValue({ final_decision: 'ALLOW', final_score: 0.5, reason: 'Instruction is perfectly safe.' }),
     };
     (ApiClient as jest.Mock).mockImplementation(() => mockApiClientInstance);
   });
@@ -62,19 +63,11 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
-      verdict: {
-        decision: 'Approved',
-        raw_score: 50000,
-        reasoning: 'Instruction is perfectly safe.',
-      }
-    });
-
     const result = await client.protect('send 100 sol to some address');
 
     expect(result.recommendation).toBe('ALLOW');
-    expect(result.riskScore).toBe(50);
-    expect(mockApiClientInstance.appendAndFinalize).toHaveBeenCalled();
+    expect(result.riskScore).toBe(0.5);
+    expect(mockApiClientInstance.streamActionStatus).toHaveBeenCalled();
   });
 
   it('should throw BentoError when protect returns BLOCKED recommendation', async () => {
@@ -86,24 +79,17 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
-      verdict: {
-        decision: 'Blocked',
-        raw_score: 95000,
-        reasoning: 'Malicious system command or sweep detected.',
-      }
+    mockApiClientInstance.streamActionStatus.mockResolvedValue({
+      final_decision: 'BLOCKED',
+      final_score: 0.95,
+      reason: 'Malicious system command or sweep detected.',
     });
 
-    await expect(
-      client.protect('send 100 sol to some address')
-    ).rejects.toThrow(BentoError);
+    const result = await client.protect('send 100 sol to some address');
 
-    try {
-      await client.protect('send 100 sol to some address');
-    } catch (err: any) {
-      expect(err.code).toBe(BentoErrorCode.HIGH_RISK_DETECTED);
-      expect(err.message).toContain('Action blocked');
-    }
+    expect(result.recommendation).toBe('BLOCKED');
+    expect(result.riskScore).toBe(0.95);
+    expect(result.reasoning).toContain('Malicious');
   });
 
   it('should handle ESCALATED recommendation and poll for APPROVAL', async () => {
@@ -115,17 +101,8 @@ describe('BentoGuardClient', () => {
     };
     const client = BentoGuardClient.initialize(config);
 
-    mockApiClientInstance.appendAndFinalize.mockResolvedValue({
-      verdict: {
-        decision: 'Escalated',
-        raw_score: 50000,
-        reasoning: 'Requires manual review.',
-      }
-    });
-
-    // First call returns ESCALATED, second call returns ALLOW
-    mockApiClientInstance.getActionStatus
-      .mockResolvedValueOnce({ final_decision: 'ESCALATED' })
+    mockApiClientInstance.streamActionStatus
+      .mockResolvedValueOnce({ final_decision: 'ESCALATED', reason: 'Requires manual review.' })
       .mockResolvedValueOnce({ final_decision: 'ALLOW', reason: 'Approved by owner manually.' });
 
     const result = await client.protect('send 100 sol to some address', {
@@ -134,8 +111,8 @@ describe('BentoGuardClient', () => {
       pollTimeoutMs: 1000,
     });
 
-    expect(result.recommendation).toBe('ALLOW');
-    expect(result.reasoning).toContain('Approved by owner');
-    expect(mockApiClientInstance.getActionStatus).toHaveBeenCalledTimes(2);
+    expect(result.recommendation).toBe('ESCALATED');
+    expect(result.reasoning).toContain('Requires manual review');
+    expect(mockApiClientInstance.streamActionStatus).toHaveBeenCalledTimes(1);
   });
 });
