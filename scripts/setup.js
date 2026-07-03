@@ -205,15 +205,18 @@ GEMINI_MODEL=gemini-2.5-flash
 
       // --- EXECUTE SCAFFOLDING ---
       if (generateExample) {
-        const sampleSrcDir = path.join(__dirname, '..', 'samples', 'finance');
         const destDir = process.cwd();
 
         try {
-          const filesToCopy = fs.readdirSync(sampleSrcDir);
+          console.log(chalk.yellow('\n📥 Downloading best practice sample from GitHub...'));
+          const tempDir = path.join(destDir, '.bento-temp');
+          execSync(`npx degit Bento-Guard/bento-sdk-best-practices "${tempDir}" --force`, { stdio: 'ignore' });
+          
+          const filesToCopy = fs.readdirSync(tempDir);
           filesToCopy.forEach(file => {
             if (file === 'package.json' || file === '.env.example' || file === 'README.md') return;
 
-            const src = path.join(sampleSrcDir, file);
+            const src = path.join(tempDir, file);
             const dest = path.join(destDir, file);
 
             if (fs.existsSync(src) && fs.statSync(src).isFile()) {
@@ -221,6 +224,7 @@ GEMINI_MODEL=gemini-2.5-flash
             }
           });
 
+          fs.rmSync(tempDir, { recursive: true, force: true });
           console.log(chalk.green('\n✅ Sample files copied successfully.'));
 
           // UPDATE PACKAGE.JSON SCRIPTS

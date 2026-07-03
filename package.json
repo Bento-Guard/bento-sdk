@@ -7,7 +7,6 @@
   "files": [
     "dist",
     "scripts",
-    "samples",
     "assets"
   ],
   "bin": {
