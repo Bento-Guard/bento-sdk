@@ -25,6 +25,14 @@ jobs:
         run: npm run build
 
       - name: Publish to NPM
-        run: npm publish --access public
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *"-"* ]]; then
+            echo "Publishing prerelease version $VERSION with tag 'rc'"
+            npm publish --access public --tag rc
+          else
+            echo "Publishing stable version $VERSION"
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_CODE }}
