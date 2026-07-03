@@ -31,6 +31,7 @@ export class ApiClient {
       encrypted_payload: string;
       signature: string;
       base64_tx: string;
+      timestamp?: number;
     },
     timeout?: number,
   ): Promise<any> {

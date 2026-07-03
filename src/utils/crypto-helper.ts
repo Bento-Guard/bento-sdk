@@ -35,17 +35,20 @@ export const encryptForRelayerDeterministic = (
   const ephemeralSecretKey = params.ephemeralSecretKey;
   const ephemeralPublicKey = x25519.getPublicKey(ephemeralSecretKey);
 
-  const sharedSecret = x25519.getSharedSecret(
+  const rawSharedSecret = x25519.getSharedSecret(
     ephemeralSecretKey,
     params.relayerPublicKey,
   );
+  
+  // Use Blake3 as a Key Derivation Function (KDF) to ensure uniform randomness
+  const derivedKey = blake3(rawSharedSecret);
 
   const nonce = params.nonce;
   if (nonce.length !== NONCE_LENGTH) {
     throw new Error(`nonce must be ${NONCE_LENGTH} bytes, got ${nonce.length}`);
   }
 
-  const ciphertext = chacha20poly1305(sharedSecret, nonce).encrypt(
+  const ciphertext = chacha20poly1305(derivedKey, nonce).encrypt(
     params.plaintext,
   );
 

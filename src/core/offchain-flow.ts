@@ -38,9 +38,11 @@ export async function offchainProtect(
       "base64",
     );
     const base64Tx = "";
+    const timestamp = Date.now();
 
     // The backend expects the signature over the combined payload for verification
-    const combinedPayload = `${encryptedPayloadB64}.${base64Tx}`;
+    // Added timestamp to prevent replay attacks
+    const combinedPayload = `${encryptedPayloadB64}.${base64Tx}.${timestamp}`;
     const messageBytes = new TextEncoder().encode(combinedPayload);
     const signatureBytes = nacl.sign.detached(
       messageBytes,
@@ -54,6 +56,7 @@ export async function offchainProtect(
       encrypted_payload: encryptedPayloadB64,
       signature: validSignature,
       base64_tx: base64Tx,
+      timestamp,
     }, options?.timeout);
 
     if (!postRes.actionId) {

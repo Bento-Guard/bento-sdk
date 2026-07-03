@@ -7,6 +7,7 @@ import {
   encryptForRelayer,
   commitmentHashAsArray,
 } from "../utils/crypto-helper";
+import { randomBytes } from "@noble/ciphers/webcrypto";
 import { BentoGuardClient } from "./client";
 
 let _bootstrapCache: {
@@ -64,7 +65,9 @@ export async function onchainProtect(
     const totalDataLen = encrypted.payload.length;
 
     // Generate a unique monotonic action id (must be a valid u64 integer string for on-chain program)
-    const actionId = Date.now().toString() + Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    const randomBuffer = randomBytes(4);
+    const randomNum = (randomBuffer[0] << 24 | randomBuffer[1] << 16 | randomBuffer[2] << 8 | randomBuffer[3]) >>> 0;
+    const actionId = Date.now().toString() + (randomNum % 100000).toString().padStart(5, '0');
 
     const targetProgram = relayerInfo.program_id; // Default to Bento program ID for tracking
 
