@@ -1,0 +1,49 @@
+name: Bug Report
+description: Report an issue or bug with the Bento Guard SDK
+title: "[BUG]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the Bento Guard SDK! Please provide as much detail as possible to help us reproduce and fix the issue quickly.
+  - type: input
+    id: version
+    attributes:
+      label: SDK Version
+      description: What version of @bentoguard/sdk are you using?
+      placeholder: e.g., 1.2.9
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is the bug? What is happening?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Share the code snippet or steps needed to reproduce the issue.
+      placeholder: |
+        1. Initialize BentoGuard...
+        2. Call bento.protect()...
+        3. See error...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs or Output
+      description: Please paste any relevant error messages or console logs here.
+      render: shell

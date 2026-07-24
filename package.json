@@ -1,6 +1,6 @@
 {
   "name": "@bentoguard/sdk",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "Bento Guard SDK - AI-powered security infrastructure for autonomous agents",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -22,8 +22,11 @@
     "demo:onchain": "ts-node bento-onchain-demo.ts",
     "lint": "eslint 'src/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts'",
-    "prepare": "npm run build",
-    "postinstall": "node scripts/banner.js"
+    "prepare": "husky",
+    "postinstall": "node scripts/banner.js",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset version && npm publish"
   },
   "keywords": [
     "bento",
@@ -36,7 +39,7 @@
     "solana"
   ],
   "author": "Bento Team",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@coral-xyz/borsh": "^0.32.1",
     "@noble/ciphers": "^1.0.0",
@@ -51,14 +54,22 @@
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@types/bs58": "^4.0.4",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.0",
     "eslint": "^8.57.0",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
+    "lint-staged": "^15.2.10",
     "prettier": "^3.2.5",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.0"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "prettier --write"
+    ]
   }
 }
