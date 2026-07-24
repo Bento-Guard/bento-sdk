@@ -6,6 +6,7 @@ export default withMermaid(
   defineConfig({
     title: "Bento Guard SDK",
     description: "AI-powered security infrastructure for autonomous agents",
+    base: '/bento-sdk/',
     themeConfig: {
       // https://vitepress.dev/reference/default-theme-config
       nav: [

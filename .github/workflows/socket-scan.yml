@@ -68,15 +68,11 @@ jobs:
           # --repo/--branch tie the scan to this repository in the Socket
           # dashboard; without them the CLI files results under the org-wide
           # default project, where other repos' scans can overwrite them.
-          socket scan create --reach \
+          socket scan create \
             --org=an-do \
             --repo="${{ github.event.repository.name }}" \
             --branch="${{ github.ref_name }}" \
             --no-interactive \
-            --reach-continue-on-no-source-files \
-            --reach-continue-on-analysis-errors \
-            --reach-continue-on-install-errors \
-            --reach-continue-on-missing-lock-files \
             . 2>&1 | tee /tmp/scan.log
           rc=${PIPESTATUS[0]}
           if [ "$rc" -eq 0 ] && grep -qE "Reachability falls back to Tier 2|fallback to the results from the pre-computed|Reachability falls back to precomputed" /tmp/scan.log; then
@@ -84,7 +80,17 @@ jobs:
           fi
           exit $rc
 
-      - name: Telegram Notification
+      - name: Telegram Notification (Success)
+        if: success()
+        uses: ./.github/actions/telegram-notify
+        with:
+          status: success
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          thread_id: ${{ secrets.TELEGRAM_THREAD_ID }}
+          stage_name: 'Socket Reachability Scan'
+
+      - name: Telegram Notification (Failure)
         if: failure()
         uses: ./.github/actions/telegram-notify
         with:
