@@ -75,5 +75,5 @@ Before opening a Pull Request, ensure you have completed the following:
 
 ## 4. Security & CI/CD
 - **Dependency Pinning**: All GitHub Actions in the project are pinned to specific SHA hashes (instead of version tags like `@v4`) to maximize security against Supply Chain Attacks.
-- **Automated Vulnerability Scanning**: `codeql-analysis.yml` and `socket-scan.yml` will continuously scan for security vulnerabilities.
+- **Automated Vulnerability Scanning**: `codeql-analysis.yml` will continuously scan for security vulnerabilities.
 - **Telegram Notifications**: If a Build or Test process fails on the main branch, a notification will be immediately dispatched to Telegram.
