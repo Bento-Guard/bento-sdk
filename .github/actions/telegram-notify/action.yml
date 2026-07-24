@@ -27,7 +27,7 @@ runs:
           -d "chat_id=${{ inputs.chat_id }}" \
           -d "message_thread_id=${{ inputs.thread_id }}" \
           -d "parse_mode=HTML" \
-          -d "text=🚀 <b>Woohoo! The code is flying high and mighty!</b> 🎉
+          --data-urlencode "text=🚀 <b>Woohoo! The code is flying high and mighty!</b> 🎉
         
         🎯 Stage: ${{ inputs.stage_name }}
         📦 Realm: ${{ github.repository }}
@@ -45,7 +45,7 @@ runs:
           -d "chat_id=${{ inputs.chat_id }}" \
           -d "message_thread_id=${{ inputs.thread_id }}" \
           -d "parse_mode=HTML" \
-          -d "text=🚑 <b>Ouch! The pipeline just took a nose dive!</b> 💥
+          --data-urlencode "text=🚑 <b>Ouch! The pipeline just took a nose dive!</b> 💥
         
         🎯 Crash Site: ${{ inputs.stage_name }}
         📦 Realm: ${{ github.repository }}

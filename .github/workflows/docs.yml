@@ -33,8 +33,7 @@ jobs:
       - name: Upload docs artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/dist/ # Cập nhật lại đường dẫn này nếu thư mục build docs của bạn khác
-
+          path: docs/.vitepress/dist/
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build
