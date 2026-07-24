@@ -38,3 +38,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Telegram Notification (Success)
+        if: success()
+        uses: ./.github/actions/telegram-notify
+        with:
+          status: success
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          thread_id: ${{ secrets.TELEGRAM_THREAD_ID }}
+          stage_name: 'Changeset Release'
+
+      - name: Telegram Notification (Failure)
+        if: failure()
+        uses: ./.github/actions/telegram-notify
+        with:
+          status: failure
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          thread_id: ${{ secrets.TELEGRAM_THREAD_ID }}
+          stage_name: 'Changeset Release'

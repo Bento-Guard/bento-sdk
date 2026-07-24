@@ -50,3 +50,23 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$tag" -m "Release $tag"
           git push origin "$tag"
+
+      - name: Telegram Notification (Success)
+        if: success() && steps.check.outputs.is_version_bump == 'true'
+        uses: ./.github/actions/telegram-notify
+        with:
+          status: success
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          thread_id: ${{ secrets.TELEGRAM_THREAD_ID }}
+          stage_name: 'Create Release Tag'
+
+      - name: Telegram Notification (Failure)
+        if: failure()
+        uses: ./.github/actions/telegram-notify
+        with:
+          status: failure
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          thread_id: ${{ secrets.TELEGRAM_THREAD_ID }}
+          stage_name: 'Create Release Tag'
