@@ -1,5 +1,13 @@
 # @bentoguard/sdk
 
+## 1.3.0
+
+### Minor Changes
+
+- 2c34cb5: - Added VitePress documentation site with comprehensive user and contributor guides.
+  - Included system architecture sequence diagrams powered by Mermaid.
+  - Fixed Git configuration to properly track documentation files.
+
 ## 1.2.11
 
 ### Patch Changes
