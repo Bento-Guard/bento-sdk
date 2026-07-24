@@ -3,7 +3,6 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^uuid$': require.resolve('uuid'),
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   testMatch: ['**/?(*.)+(spec|test).ts'],
@@ -12,4 +11,10 @@ module.exports = {
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
+  transform: {
+    '^.+\\.[tj]sx?$': 'ts-jest'
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(uuid|@solana/web3.js|jayson|rpc-websockets|bs58)/)'
+  ],
 };
