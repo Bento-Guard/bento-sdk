@@ -1,0 +1,56 @@
+name: 'Telegram Notification'
+description: 'Sends a Telegram notification about the deployment status'
+inputs:
+  status:
+    description: 'The status of the deployment (success or failure)'
+    required: true
+  bot_token:
+    description: 'Telegram Bot Token'
+    required: true
+  chat_id:
+    description: 'Telegram Chat ID'
+    required: true
+  thread_id:
+    description: 'Telegram Thread ID'
+    required: true
+  stage_name:
+    description: 'The pipeline stage where this notification is sent'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Notify Telegram Success
+      if: inputs.status == 'success'
+      shell: bash
+      run: |
+        curl -X POST "https://api.telegram.org/bot${{ inputs.bot_token }}/sendMessage" \
+          -d "chat_id=${{ inputs.chat_id }}" \
+          -d "message_thread_id=${{ inputs.thread_id }}" \
+          -d "parse_mode=HTML" \
+          -d "text=🚀 <b>Woohoo! The code is flying high and mighty!</b> 🎉
+        
+        🎯 Stage: ${{ inputs.stage_name }}
+        📦 Realm: ${{ github.repository }}
+        🌿 Branch: ${{ github.ref_name }}
+        😎 Star Dev: ${{ github.actor }}
+        🔖 Artifact: ${{ github.sha }}
+        
+        👉 Admire the glory here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    - name: Notify Telegram Failed
+      if: inputs.status == 'failure'
+      shell: bash
+      run: |
+        curl -X POST "https://api.telegram.org/bot${{ inputs.bot_token }}/sendMessage" \
+          -d "chat_id=${{ inputs.chat_id }}" \
+          -d "message_thread_id=${{ inputs.thread_id }}" \
+          -d "parse_mode=HTML" \
+          -d "text=🚑 <b>Ouch! The pipeline just took a nose dive!</b> 💥
+        
+        🎯 Crash Site: ${{ inputs.stage_name }}
+        📦 Realm: ${{ github.repository }}
+        🌿 Branch: ${{ github.ref_name }}
+        😭 Suspect: ${{ github.actor }} (Shame, shame!)
+        🔖 Evidence: ${{ github.sha }}
+        
+        🕵️‍♂️ Investigate the crime scene: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

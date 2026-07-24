@@ -1,0 +1,52 @@
+name: Create Release Tag
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  CI: true
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+
+      - name: Determine if latest commit is a version bump
+        id: check
+        run: |
+          event_actor="${{ github.actor }}"
+          commit_message=$(git log -1 --pretty=%B)
+          commit_author=$(git log -1 --pretty=%an)
+          
+          # Changesets bot usually uses "Version Packages" or custom messages. Adjust if needed.
+          if [[ "$commit_message" == "chore: update versions"* || "$commit_message" == "Version Packages"* ]]; then
+            echo "is_version_bump=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_version_bump=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push git tag
+        if: steps.check.outputs.is_version_bump == 'true'
+        run: |
+          # SDK package.json is at root
+          version=$(jq -r '.version' package.json)
+          tag="v${version}"
+          echo "Tag derived from package version: $tag"
+
+          if git rev-parse "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists. Skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Release $tag"
+          git push origin "$tag"

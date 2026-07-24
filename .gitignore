@@ -10,7 +10,6 @@ pnpm-lock.yaml
 
 # Documentation
 /.agent
-/docs
 
 # Environment variables
 .env

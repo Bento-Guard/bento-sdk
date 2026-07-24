@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+.changeset/
+*.min.js
+.git/
