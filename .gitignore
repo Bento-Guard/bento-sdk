@@ -10,6 +10,8 @@ pnpm-lock.yaml
 
 # Documentation
 /.agent
+docs/.vitepress/dist
+docs/.vitepress/cache
 
 # Environment variables
 .env
@@ -42,4 +44,3 @@ pnpm-debug.log*
 *.tsbuildinfo
 *.cache
 .temp
-docs/

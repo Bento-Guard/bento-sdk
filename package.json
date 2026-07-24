@@ -20,6 +20,9 @@
     "test:coverage": "jest --coverage",
     "validate": "ts-node scratch/validate_sdk.ts",
     "demo:onchain": "ts-node bento-onchain-demo.ts",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
     "prepare": "husky",
@@ -64,10 +67,14 @@
     "husky": "^9.1.7",
     "jest": "^29.7.0",
     "lint-staged": "^15.2.10",
+    "mermaid": "^11.16.0",
     "prettier": "^3.2.5",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17",
+    "vue": "^3.5.40"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
